@@ -2,72 +2,19 @@
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
-.Python
-*.egg-info/
-dist/
-build/
-.eggs/
- 
-# Virtual environments
-venv/
-env/
-.venv/
- 
-# Environment files
+
+# Environment
 .env
 .env.local
-*.env
- 
-# Docker
-.docker/
- 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-data/
- 
+
 # macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 ._*
- 
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
- 
+
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
- 
+
 # Logs
 *.log
-logs/
- 
-# Node (if any tooling added later)
-node_modules/
-npm-debug.log*
- 
-# Internal development files — never push to GitHub
-STRATIQ_PROJECT_BRIEF.md
-DOCKERHUB_DESCRIPTION.txt
-data/
-DOCKERHUB_DESCRIPTION.txt
-
-# Local working files — keep locally, never push
-providers/
-data/
-launch.bat
-launch.command
-stop.bat
-stop.command
-docker-compose.yml
-DOCKERHUB_DESCRIPTION.txt
-*.db
-*.sqlite
