@@ -57,3 +57,5 @@ npm-debug.log*
 # Internal development files — never push to GitHub
 STRATIQ_PROJECT_BRIEF.md
 DOCKERHUB_DESCRIPTION.txt
+data/
+DOCKERHUB_DESCRIPTION.txt
