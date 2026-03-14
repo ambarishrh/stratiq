@@ -8,49 +8,52 @@ __pycache__/
 dist/
 build/
 .eggs/
-
+ 
 # Virtual environments
 venv/
 env/
 .venv/
-
+ 
 # Environment files
 .env
 .env.local
 *.env
-
+ 
 # Docker
 .docker/
-
+ 
 # Database
 *.db
 *.sqlite
 *.sqlite3
 data/
-
+ 
 # macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 ._*
-
+ 
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
+ 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
+ 
 # Logs
 *.log
 logs/
-
+ 
 # Node (if any tooling added later)
 node_modules/
 npm-debug.log*
+ 
+# Internal development files — never push to GitHub
 STRATIQ_PROJECT_BRIEF.md
+DOCKERHUB_DESCRIPTION.txt
