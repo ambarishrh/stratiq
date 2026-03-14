@@ -1,0 +1,19 @@
+StratIQ — AI-powered IT & Cybersecurity Strategy Platform for CISOs and CIOs.
+
+Enter a company URL. Get a board-ready strategy brief in minutes.
+
+Generates: Executive Dashboard · Strategic Roadmap · Formal Strategy Document
+
+✓ Runs 100% locally — no data leaves your machine
+✓ Bring Your Own Key (Anthropic, OpenAI, Google, OpenRouter)
+✓ 25 global framework recommendations (NCA ECC, GDPR, ISO 27001, HIPAA, and more)
+✓ Audience-aware output: CISO · CIO · Board
+
+Quick start:
+  docker run -d -p 3000:3000 -v stratiq_data:/app/data --name stratiq ambarishrh/stratiq:latest
+  open http://localhost:3000
+
+Full documentation: https://github.com/ambarishrh/stratiq
+
+Licensed under CC BY-NC-SA 4.0
+Strategy methodology inspired by the work of Dr. Muhammad Malik.

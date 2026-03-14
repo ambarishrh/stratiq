@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+
+# Development
+.env
+.venv
+venv/
+
+# Data (never bake into image — use volume)
+data/
+*.db
+*.sqlite
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
