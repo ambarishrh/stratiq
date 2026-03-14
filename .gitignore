@@ -59,3 +59,15 @@ STRATIQ_PROJECT_BRIEF.md
 DOCKERHUB_DESCRIPTION.txt
 data/
 DOCKERHUB_DESCRIPTION.txt
+
+# Local working files — keep locally, never push
+providers/
+data/
+launch.bat
+launch.command
+stop.bat
+stop.command
+docker-compose.yml
+DOCKERHUB_DESCRIPTION.txt
+*.db
+*.sqlite
