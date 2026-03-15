@@ -200,9 +200,13 @@ The full 12-section document is built for execution, not decoration:
 ```bash
 docker pull ambarishrh/stratiq:latest
 docker stop stratiq && docker rm stratiq
+docker rmi ambarishrh/stratiq:latest
+docker pull ambarishrh/stratiq:latest
 docker run -d -p 3000:3000 -v stratiq_data:/app/data \
   --name stratiq ambarishrh/stratiq:latest
 ```
+
+The `docker rmi` step removes any cached local image, ensuring you get the actual latest version from Docker Hub rather than a cached copy.
 
 Session history is preserved in the `stratiq_data` volume across updates.
 
