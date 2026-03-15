@@ -679,7 +679,7 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.8.2';
+const STRATIQ_VERSION='2.8.3';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
 
@@ -1421,22 +1421,34 @@ async function startScan(){
     var msg=err.message||'';
     var friendly='';
     if(msg.indexOf('402')!==-1||msg.indexOf('Insufficient credits')!==-1||msg.indexOf('credits')!==-1){
-      friendly='<strong>OpenRouter: Insufficient credits.</strong> Add credits at <a href="https://openrouter.ai/settings/credits" target="_blank" style="color:var(--accent)">openrouter.ai/settings/credits</a> then try again.';
-    } else if(msg.indexOf('401')!==-1||msg.indexOf('Invalid API key')!==-1||msg.indexOf('authentication')!==-1){
-      friendly='<strong>Invalid API key.</strong> Check your key is correct for the selected provider and try again.';
+      friendly='<strong>Insufficient credits.</strong> Top up your OpenRouter balance at <a href="https://openrouter.ai/settings/credits" target="_blank" style="color:var(--accent)">openrouter.ai/settings/credits</a> then try again.';
+    } else if(msg.indexOf('401')!==-1||msg.indexOf('Invalid API key')!==-1||msg.indexOf('authentication')!==-1||msg.indexOf('invalid x-api-key')!==-1){
+      friendly='<strong>Invalid API key.</strong> Check your key is correct for the selected provider and has not been revoked, then try again.';
     } else if(msg.indexOf('429')!==-1||msg.indexOf('rate limit')!==-1||msg.indexOf('Rate limit')!==-1){
       friendly='<strong>Rate limit hit.</strong> Wait 30 seconds then try again.';
-    } else if(msg.indexOf('404')!==-1||msg.indexOf('Scrape failed')!==-1||msg.indexOf('Failed to fetch')!==-1){
-      friendly='<strong>Cannot reach the StratIQ server.</strong> The Docker container may not be running. Start it with: <code style="font-size:11px;background:rgba(0,0,0,.08);padding:2px 5px;border-radius:3px">docker start stratiq</code>';
+    } else if(msg.indexOf('500')!==-1||msg.indexOf('Internal Server Error')!==-1){
+      friendly='<strong>AI provider is temporarily unavailable (500).</strong> This is a provider-side issue, not your key or settings. Wait a moment and try again, or switch to a different provider.';
+    } else if(msg.indexOf('404')!==-1||msg.indexOf('Scrape failed')!==-1){
+      friendly='<strong>Cannot reach the StratIQ server.</strong> The Docker container may not be running.<br>Restart it with: <code style="font-size:11px;background:rgba(0,0,0,.08);padding:2px 5px;border-radius:3px">docker start stratiq</code>';
+    } else if(msg.indexOf('Failed to fetch')!==-1||msg.indexOf('ERR_CONNECTION')!==-1||msg.indexOf('NetworkError')!==-1){
+      friendly='<strong>Network error.</strong> Check your internet connection. If using Anthropic directly, your network may be blocking the request — try switching to OpenRouter.';
     } else if(msg.indexOf('AI returned unexpected format')!==-1){
-      friendly='<strong>AI response could not be parsed.</strong> Try again — this is usually a one-off issue.';
+      friendly='<strong>AI response could not be parsed.</strong> This is usually a one-off issue — try again.';
     } else {
-      friendly='<strong>Scan failed:</strong> '+msg;
+      friendly='<strong>Scan failed.</strong> Something went wrong during the analysis. Try again or switch AI provider.';
     }
-    scanError(friendly);
-    document.getElementById('url-form').style.display='block';
-    document.getElementById('scan-prog').style.display='none';
+    // Show error inside scan-prog (keep visible so user sees the message)
+    // Add a Try Again button that resets to the URL form
+    var tryAgainBtn='<button onclick="scanReset()" class="btn-primary" style="margin-top:12px;padding:10px 20px;font-size:12px">← Try Again</button>';
+    scanError(friendly+'<br>'+tryAgainBtn);
   }
+}
+
+function scanReset(){
+  document.getElementById('url-form').style.display='block';
+  document.getElementById('scan-prog').style.display='none';
+  var eb=document.getElementById('scan-error');
+  if(eb){eb.style.display='none';eb.innerHTML='';}
 }
 
 // ── SOURCES ──────────────────────────────────────────────────────────────────

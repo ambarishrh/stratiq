@@ -4,6 +4,18 @@ All notable changes to StratIQ are documented here.
 
 ---
 
+## [2.8.3] — 2026-03-15
+
+### Fixed — Scan Error Visibility
+- **Errors were invisible to users** — the scan error div lived inside `#scan-prog` which was being hidden on error, so users saw the URL form reappear with no explanation. Now the scan progress panel stays visible on error so the message is always shown
+- **"Try Again" button** added to every error state — resets cleanly back to the URL input without a page reload
+- **500 / provider unavailable** error now has a clear user-facing message: "AI provider temporarily unavailable — wait and retry, or switch provider"
+- **Network errors** (`ERR_CONNECTION`, `NetworkError`, `Failed to fetch`) now handled separately with a helpful suggestion to try OpenRouter if direct provider is blocked
+- **Generic fallback** no longer dumps the raw technical error string — shows "Something went wrong. Try again or switch AI provider" instead
+- **401 invalid key** detection improved to also catch `invalid x-api-key` response text
+
+---
+
 ## [2.8.2] — 2026-03-15
 
 ### Fixed — URL Scraping
