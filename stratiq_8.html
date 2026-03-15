@@ -679,7 +679,7 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.8.1';
+const STRATIQ_VERSION='2.8.2';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
 
@@ -1196,20 +1196,21 @@ async function callClaude(prompt, maxTok=4000, system=''){
   return d.choices[0].message.content;
 }
 
-function buildSignalPrompt(pages){
+function buildSignalPrompt(pages, urlVal){
   const parts=[];
   if(pages.homepage?.content) parts.push(`=== HOMEPAGE ===\n${pages.homepage.content.slice(0,2500)}`);
   if(pages.about?.content) parts.push(`=== ABOUT US ===\n${pages.about.content.slice(0,2000)}`);
   if(pages.news?.content) parts.push(`=== NEWS / PRESS ===\n${pages.news.content.slice(0,2000)}`);
   if(pages.leadership?.content) parts.push(`=== LEADERSHIP ===\n${pages.leadership.content.slice(0,3000)}`);
-  return `You are an IT and cybersecurity strategy analyst. Extract intelligence signals from the following web content for a CISO/CIO strategy briefing.
+  const domainHint=urlVal?`\nThe URL being scanned is: ${urlVal}\nUse this to infer the company name if not clearly stated in content — e.g. bloomholding.com = "Bloom Holding", not "bloom.com". Extract the proper trading name from page content wherever possible.`:'';
+  return `You are an IT and cybersecurity strategy analyst. Extract intelligence signals from the following web content for a CISO/CIO strategy briefing.${domainHint}
 
 ${parts.join('\n\n')}
 
 Return ONLY a JSON object (no markdown, no preamble) in this exact structure:
 {
   "company": {
-    "name": "Company name",
+    "name": "Proper company trading name — NOT the domain URL. Extract from page content (logo alt text, page title, about section). If unclear, derive from domain: bloomholding.com → Bloom Holding, yasholding.ae → Yas Holding",
     "industry": "Primary industry/sector",
     "region": "Country/region",
     "size": "Employee count estimate or range",
@@ -1340,7 +1341,7 @@ async function startScan(){
 
     // Step 4 — send to AI
     scanStep(4,steps.length,steps[4]);
-    const prompt=buildSignalPrompt(scrapeData.pages);
+    const prompt=buildSignalPrompt(scrapeData.pages, urlVal);
     const aiRaw=await callClaude(prompt);
     scanStep(4,steps.length,steps[4],true);
 

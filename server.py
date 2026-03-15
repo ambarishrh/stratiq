@@ -62,9 +62,11 @@ def _fetch_page(url: str) -> dict:
     return {"url": url, "status": "error", "content": "", "error": "fetch failed"}
 
 # Keywords to match against hrefs when crawling homepage links
-_ABOUT_KEYS      = ["about", "who-we-are", "about-us", "company", "overview", "our-story", "our-journey", "our-history", "history"]
+# Checks full URL (path + query string) to catch sites using ?section=leadership-team style navigation
+_ABOUT_KEYS      = ["about", "who-we-are", "about-us", "company", "overview", "our-story", "our-journey", "our-history"]
 _NEWS_KEYS       = ["news", "press", "media", "blog", "insights", "updates", "announcements"]
-_LEADERSHIP_KEYS = ["leadership", "team", "management", "executives", "board", "our-team", "directors", "our-history", "history", "founders", "people", "governance", "senior"]
+_LEADERSHIP_KEYS = ["leadership", "team", "management", "executives", "board", "our-team", "directors",
+                    "history", "founders", "people", "governance", "senior"]
 
 def _candidate_urls(base: str) -> dict:
     """Fetch homepage, crawl its links, find best match for each page type."""
@@ -95,8 +97,9 @@ def _candidate_urls(base: str) -> dict:
     def best_match(keys):
         for key in keys:
             for link in links:
-                path = urlparse(link).path.lower()
-                if key in path:
+                # Check full URL including query string, not just path
+                # Catches sites like bloomholding.com/who-we-are?section=leadership-team
+                if key in link:
                     return link
         return None
 
