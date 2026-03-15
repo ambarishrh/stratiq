@@ -679,7 +679,7 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.8.3';
+const STRATIQ_VERSION='2.8.4';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
 
@@ -1615,12 +1615,21 @@ function rContext(){
     +'<div style="display:flex;gap:8px"><input id="ctx-risk-custom" type="text" placeholder="Add custom risk..." style="flex:1;font-size:13px" onkeydown="if(event.key===\'Enter\')ctxAddRisk()"><button onclick="ctxAddRisk()" class="btn-ghost" style="border-color:var(--accent);color:var(--accent);white-space:nowrap;padding:8px 14px">+ Add</button></div>'
   );
 
-  // Q9 — Constraint
-  h+=card('Biggest Constraint','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" style="margin-right:6px"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
-    radio('ctx-constraint',[
-      {val:'Budget',lbl:'Budget'},{val:'People / skills',lbl:'People / skills'},
-      {val:'Executive buy-in',lbl:'Executive buy-in'},{val:'All three',lbl:'All three equally'}
-    ],ic.constraint||'','internalContext.constraint=this.value;autoSave()')
+  // Q9 — Constraint (multi-select — user may have more than one)
+  var constraintOpts=['Budget','People / skills','Executive buy-in'];
+  var selConstraints=Array.isArray(ic.constraints)?ic.constraints:(ic.constraint?[ic.constraint]:[]);
+  var constraintBoxes=constraintOpts.map(function(opt){
+    var on=selConstraints.indexOf(opt)!==-1;
+    return '<div onclick="ctxToggleConstraint(\''+opt+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;transition:all .15s;user-select:none;flex:1">'
+      +'<div style="width:18px;height:18px;border-radius:5px;border:2px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">'
+      +(on?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')
+      +'</div>'
+      +'<span style="font-size:13px;font-weight:600;color:'+(on?'var(--accent)':'var(--text-dim)')+'">'+opt+'</span>'
+      +'</div>';
+  }).join('');
+  h+=card('Biggest Constraints','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" style="margin-right:6px"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+    '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Select all that apply.</p>'
+    +'<div id="ctx-constraint-boxes" style="display:flex;gap:10px;flex-wrap:wrap">'+constraintBoxes+'</div>'
   );
 
   // Q10 — Compliance deadline
@@ -1698,6 +1707,29 @@ function ctxAddRisk(){
   var r=inp.value.trim();
   inp.value='';
   ctxToggleRisk(r);
+}
+
+function ctxToggleConstraint(opt){
+  if(!Array.isArray(internalContext.constraints)) internalContext.constraints=[];
+  var idx=internalContext.constraints.indexOf(opt);
+  if(idx===-1) internalContext.constraints.push(opt);
+  else internalContext.constraints.splice(idx,1);
+  // Keep legacy constraint field in sync for backward compat
+  internalContext.constraint=internalContext.constraints.join(', ');
+  autoSave();
+  // Re-render just the constraint boxes without full re-render
+  var constraintOpts=['Budget','People / skills','Executive buy-in'];
+  var boxes=constraintOpts.map(function(o){
+    var on=internalContext.constraints.indexOf(o)!==-1;
+    return '<div onclick="ctxToggleConstraint(\''+o+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;transition:all .15s;user-select:none;flex:1">'
+      +'<div style="width:18px;height:18px;border-radius:5px;border:2px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">'
+      +(on?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')
+      +'</div>'
+      +'<span style="font-size:13px;font-weight:600;color:'+(on?'var(--accent)':'var(--text-dim)')+'">'+o+'</span>'
+      +'</div>';
+  }).join('');
+  var container=document.getElementById('ctx-constraint-boxes');
+  if(container) container.innerHTML=boxes;
 }
 
 function saveCtxAndProceed(){
@@ -1879,12 +1911,19 @@ function buildCtxBlock(ic){
   if(ic.lastIncident) lines.push('Last significant security incident: '+ic.lastIncident);
   if(ic.boardAttitude) lines.push('Board attitude to cyber risk: '+ic.boardAttitude);
   if(ic.topRisks&&ic.topRisks.length) lines.push('Top business risks identified by practitioner: '+ic.topRisks.join(', '));
-  if(ic.constraint)   lines.push('Biggest constraint: '+ic.constraint);
+  // Support both array (new) and string (legacy) for constraints
+  var constraints=Array.isArray(ic.constraints)&&ic.constraints.length?ic.constraints.join(', '):ic.constraint||'';
+  if(constraints) lines.push('Biggest constraints: '+constraints+' — sequence roadmap to address these first');
   if(ic.complianceDeadline) lines.push('Compliance deadline pressure: '+ic.complianceDeadline);
   if(ic.cloudStage)   lines.push('Cloud adoption stage: '+ic.cloudStage);
   if(ic.remoteWork)   lines.push('Remote/hybrid workforce: '+ic.remoteWork);
   if(ic.vendorRisk)   lines.push('Third-party/vendor risk exposure: '+ic.vendorRisk);
   if(ic.boardNotes)   lines.push('Additional board context: '+ic.boardNotes);
+  // Add wishlist items so AI knows what capabilities are being evaluated
+  if(LS_WISHLIST&&LS_WISHLIST.length){
+    var wl=LS_WISHLIST.map(function(w){return w.cap+(w.budget&&w.budget!=='Not Started'?' ['+w.budget+']':' [No Budget Yet]');});
+    lines.push('Capabilities under evaluation / pipeline: '+wl.join('; ')+' — factor these into roadmap phasing');
+  }
   return lines.length?'\n\nPRACTITIONER INTERNAL CONTEXT (treat as authoritative — overrides assumptions):\n'+lines.join('\n'):'';
 }
 

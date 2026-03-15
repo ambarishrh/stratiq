@@ -4,6 +4,19 @@ All notable changes to StratIQ are documented here.
 
 ---
 
+## [2.8.4] — 2026-03-15
+
+### Improved — Internal Context Interview
+- **Biggest Constraint changed to multi-select** — users can now select any combination of Budget, People/Skills, and Executive buy-in. Previously a single-select radio forced "All three equally" when two constraints applied
+- Constraints stored as array (`internalContext.constraints[]`); legacy single-value sessions still load correctly
+
+### Fixed — Wishlist not reaching AI
+- `LS_WISHLIST` items were saved to SQLite but never passed to the AI prompts — invisible to strategy generation
+- Now serialised in `buildCtxBlock()` as "Capabilities under evaluation / pipeline" with budget status
+- AI instructed to factor pipeline capabilities into roadmap phasing (e.g. if NDR is already being evaluated, roadmap reflects that rather than recommending it from scratch)
+
+---
+
 ## [2.8.3] — 2026-03-15
 
 ### Fixed — Scan Error Visibility
