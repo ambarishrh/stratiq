@@ -7,8 +7,8 @@ All notable changes to StratIQ are documented here.
 ## [2.8.2] — 2026-03-15
 
 ### Fixed — URL Scraping
-- **Leadership page not found on query-param sites** (e.g. `bloomholding.com/who-we-are?section=leadership-team`): `best_match()` in `server.py` now checks the full URL including query string, not just the path segment. Previously `/who-we-are?section=leadership-team` was reduced to `/who-we-are` before keyword matching, causing leadership content to be missed entirely
-- **Wrong company name inferred from domain** (e.g. "bloom.com" instead of "Bloom Holding"): `buildSignalPrompt()` now receives the scanned URL and passes a domain hint to the AI with an explicit instruction to derive the proper trading name — e.g. `bloomholding.com → Bloom Holding`, `yasholding.ae → Yas Holding`. AI instructed to use page content (logo alt text, page title, about section) first, domain as fallback
+- **Leadership page not found on query-param navigation sites**: `best_match()` in `server.py` now checks the full URL including query string, not just the path segment. Previously URLs like `/who-we-are?section=leadership-team` were reduced to `/who-we-are` before keyword matching, causing leadership content to be missed entirely on sites that use query parameters for section navigation
+- **Wrong company name inferred from domain**: `buildSignalPrompt()` now receives the scanned URL and passes a domain hint to the AI with an explicit instruction to derive the proper trading name from page content (logo alt text, page title, about section) first, falling back to a clean derivation from the domain — e.g. `holding.com → Company Holding`. Prevents the AI from returning the raw domain URL as the company name
 - `_ABOUT_KEYS` and `_LEADERSHIP_KEYS` in `server.py` expanded to include `our-journey`, `our-history`, `history`, `founders`, `people`, `governance`, `senior`
 
 ---

@@ -1202,7 +1202,7 @@ function buildSignalPrompt(pages, urlVal){
   if(pages.about?.content) parts.push(`=== ABOUT US ===\n${pages.about.content.slice(0,2000)}`);
   if(pages.news?.content) parts.push(`=== NEWS / PRESS ===\n${pages.news.content.slice(0,2000)}`);
   if(pages.leadership?.content) parts.push(`=== LEADERSHIP ===\n${pages.leadership.content.slice(0,3000)}`);
-  const domainHint=urlVal?`\nThe URL being scanned is: ${urlVal}\nUse this to infer the company name if not clearly stated in content — e.g. bloomholding.com = "Bloom Holding", not "bloom.com". Extract the proper trading name from page content wherever possible.`:'';
+  const domainHint=urlVal?`\nThe URL being scanned is: ${urlVal}\nUse this to infer the company name if not clearly stated in content — extract the proper trading name from the domain by removing TLD and making it readable (e.g. acmeholding.com = "Acme Holding", techgroup.ae = "Tech Group"). Always prefer the actual company name found in page content over domain derivation.`:'';
   return `You are an IT and cybersecurity strategy analyst. Extract intelligence signals from the following web content for a CISO/CIO strategy briefing.${domainHint}
 
 ${parts.join('\n\n')}
@@ -1210,7 +1210,7 @@ ${parts.join('\n\n')}
 Return ONLY a JSON object (no markdown, no preamble) in this exact structure:
 {
   "company": {
-    "name": "Proper company trading name — NOT the domain URL. Extract from page content (logo alt text, page title, about section). If unclear, derive from domain: bloomholding.com → Bloom Holding, yasholding.ae → Yas Holding",
+    "name": "Proper company trading name — NOT the domain URL. Extract from page content (logo alt text, page title, about section). If unclear, derive cleanly from domain by removing TLD and formatting properly",
     "industry": "Primary industry/sector",
     "region": "Country/region",
     "size": "Employee count estimate or range",
