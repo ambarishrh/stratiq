@@ -679,7 +679,7 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.8.4';
+const STRATIQ_VERSION='2.9.0';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
 
@@ -691,11 +691,229 @@ function genUUID(){
   });
 }
 
+
+// ── STORAGE ADAPTER ────────────────────────────────────────────────────────
+// Detects whether Flask backend is available. If yes → FlaskAdapter (Docker).
+// If no → IndexedDBAdapter (GitHub Pages / static hosting).
+// All session functions below call storage.* — never Flask directly.
+
+var BACKEND_AVAILABLE = false;
+var storage = null;
+
+async function detectBackend(){
+  try{
+    var r = await fetch('/api/ping', {method:'GET', signal: AbortSignal.timeout(1500)});
+    BACKEND_AVAILABLE = r.ok;
+  } catch(e){ BACKEND_AVAILABLE = false; }
+  storage = BACKEND_AVAILABLE ? new FlaskAdapter() : new IndexedDBAdapter();
+  console.log('[StratIQ] Storage mode:', BACKEND_AVAILABLE ? 'Flask/Docker' : 'IndexedDB/Web');
+}
+
+// ── Flask Adapter ───────────────────────────────────────────────────────────
+function FlaskAdapter(){}
+FlaskAdapter.prototype.getSessions = async function(){
+  var r = await fetch('/api/sessions'); if(!r.ok) return [];
+  return r.json();
+};
+FlaskAdapter.prototype.getSession = async function(id){
+  var r = await fetch('/api/session/'+id); if(!r.ok) return null;
+  return r.json();
+};
+FlaskAdapter.prototype.deleteSession = async function(id){
+  await fetch('/api/session/'+id, {method:'DELETE'});
+};
+FlaskAdapter.prototype.saveWizardState = async function(id, cn, url, payload){
+  await fetch('/api/session/'+id+'/save', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({data_type:'wizard_state', company_name:cn, url:url, payload:payload})});
+};
+FlaskAdapter.prototype.saveScan = async function(id, cn, url, provider, result){
+  await fetch('/api/scan/save', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session_id:id, company_name:cn, url:url, provider:provider, result:result})});
+};
+FlaskAdapter.prototype.saveGeneration = async function(id, payload){
+  await fetch('/api/generate', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)});
+};
+FlaskAdapter.prototype.saveLandscape = async function(id, payload){
+  await fetch('/api/session/'+id+'/save', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({data_type:'landscape', company_name:'Organisation', url:'', payload:payload})});
+};
+FlaskAdapter.prototype.scrape = async function(url){
+  var r = await fetch('/api/scrape', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:url})});
+  if(!r.ok) throw new Error('Scrape failed: '+r.status);
+  return r.json();
+};
+
+// ── IndexedDB Adapter ───────────────────────────────────────────────────────
+function IndexedDBAdapter(){
+  this._db = null;
+}
+IndexedDBAdapter.prototype._open = function(){
+  var self = this;
+  if(self._db) return Promise.resolve(self._db);
+  return new Promise(function(res, rej){
+    var req = indexedDB.open('stratiq', 1);
+    req.onupgradeneeded = function(e){
+      var db = e.target.result;
+      if(!db.objectStoreNames.contains('sessions')){
+        var os = db.createObjectStore('sessions', {keyPath:'id'});
+        os.createIndex('updated_at','updated_at',{unique:false});
+      }
+    };
+    req.onsuccess = function(e){ self._db = e.target.result; res(self._db); };
+    req.onerror = function(){ rej(req.error); };
+  });
+};
+IndexedDBAdapter.prototype._put = async function(record){
+  var db = await this._open();
+  return new Promise(function(res,rej){
+    var tx = db.transaction('sessions','readwrite');
+    tx.objectStore('sessions').put(record);
+    tx.oncomplete = res; tx.onerror = function(){ rej(tx.error); };
+  });
+};
+IndexedDBAdapter.prototype._get = async function(id){
+  var db = await this._open();
+  return new Promise(function(res,rej){
+    var tx = db.transaction('sessions','readonly');
+    var req = tx.objectStore('sessions').get(id);
+    req.onsuccess = function(){ res(req.result||null); };
+    req.onerror = function(){ rej(req.error); };
+  });
+};
+IndexedDBAdapter.prototype._getAll = async function(){
+  var db = await this._open();
+  return new Promise(function(res,rej){
+    var tx = db.transaction('sessions','readonly');
+    var req = tx.objectStore('sessions').getAll();
+    req.onsuccess = function(){ res(req.result||[]); };
+    req.onerror = function(){ rej(req.error); };
+  });
+};
+IndexedDBAdapter.prototype._delete = async function(id){
+  var db = await this._open();
+  return new Promise(function(res,rej){
+    var tx = db.transaction('sessions','readwrite');
+    tx.objectStore('sessions').delete(id);
+    tx.oncomplete = res; tx.onerror = function(){ rej(tx.error); };
+  });
+};
+IndexedDBAdapter.prototype.getSessions = async function(){
+  var all = await this._getAll();
+  return all.sort(function(a,b){ return new Date(b.updated_at)-new Date(a.updated_at); })
+    .map(function(s){ return {id:s.id, company_name:s.company_name, url:s.url,
+      status:s.status||'draft', updated_at:s.updated_at}; });
+};
+IndexedDBAdapter.prototype.getSession = async function(id){
+  var s = await this._get(id);
+  if(!s) return null;
+  return {id:s.id, url:s.url, status:s.status||'draft', data:s.data||{}};
+};
+IndexedDBAdapter.prototype.deleteSession = async function(id){
+  await this._delete(id);
+};
+IndexedDBAdapter.prototype.saveWizardState = async function(id, cn, url, payload){
+  var existing = await this._get(id) || {id:id, data:{}};
+  existing.company_name = cn; existing.url = url;
+  existing.status = existing.status||'draft';
+  existing.updated_at = new Date().toISOString();
+  existing.data = existing.data||{};
+  existing.data.wizard_state = payload;
+  await this._put(existing);
+};
+IndexedDBAdapter.prototype.saveScan = async function(id, cn, url, provider, result){
+  var existing = await this._get(id) || {id:id, data:{}};
+  existing.company_name = cn; existing.url = url;
+  existing.status = 'scanning'; existing.updated_at = new Date().toISOString();
+  existing.data = existing.data||{};
+  existing.data.scan = result;
+  await this._put(existing);
+};
+IndexedDBAdapter.prototype.saveGeneration = async function(id, payload){
+  var existing = await this._get(id) || {id:id, data:{}};
+  existing.company_name = payload.company_name||existing.company_name;
+  existing.url = payload.url||existing.url;
+  existing.status = 'complete'; existing.updated_at = new Date().toISOString();
+  existing.data = existing.data||{};
+  if(payload.dashboard) existing.data.dashboard = payload.dashboard;
+  if(payload.roadmap)   existing.data.roadmap   = payload.roadmap;
+  if(payload.document)  existing.data.document  = payload.document;
+  if(payload.aiFrameworks) existing.data.aiFrameworks = payload.aiFrameworks;
+  await this._put(existing);
+};
+IndexedDBAdapter.prototype.saveLandscape = async function(id, payload){
+  var existing = await this._get(id) || {id:id, data:{}};
+  existing.updated_at = new Date().toISOString();
+  existing.data = existing.data||{};
+  existing.data.landscape = payload;
+  await this._put(existing);
+};
+IndexedDBAdapter.prototype.scrape = async function(url){
+  // buildSignalPrompt expects: pages.homepage.content, pages.about.content,
+  // pages.news.content, pages.leadership.content
+  // Try CORS proxy; if blocked, return empty pages so AI uses URL context only.
+  var CORS_PROXY = 'https://corsproxy.io/?url=';
+
+  function stripTags(html){
+    return html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi,'')
+               .replace(/<script[^>]*>[\s\S]*?<\/script>/gi,'')
+               .replace(/<[^>]+>/g,' ')
+               .replace(/\s{2,}/g,' ').trim();
+  }
+
+  function extractLinks(html, base){
+    var links=[], re=/href=["']([^"'#?]+)["']/gi, m;
+    var baseHost=new URL(base).origin;
+    while((m=re.exec(html))!==null){
+      try{var abs=new URL(m[1],base).href;if(abs.startsWith(baseHost)&&!links.includes(abs))links.push(abs);}catch(e){}
+    }
+    return links;
+  }
+
+  function slotForUrl(u){
+    var low=u.toLowerCase();
+    if(low.includes('about')) return 'about';
+    if(low.includes('leadership')||low.includes('team')||low.includes('management')||low.includes('executive')) return 'leadership';
+    if(low.includes('news')||low.includes('press')||low.includes('media')) return 'news';
+    return null;
+  }
+
+  var pages={homepage:{content:'',url:url},about:{content:'',url:''},news:{content:'',url:''},leadership:{content:'',url:''}};
+
+  try{
+    var r0=await fetch(CORS_PROXY+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+    if(!r0.ok) throw new Error('Proxy fetch failed: '+r0.status);
+    var homeRaw=await r0.text();
+    pages.homepage.content=stripTags(homeRaw).substring(0,30000);
+
+    var links=extractLinks(homeRaw,url);
+    var filled=new Set();
+    for(var i=0;i<links.length&&filled.size<3;i++){
+      var slot=slotForUrl(links[i]);
+      if(slot&&!filled.has(slot)){
+        try{
+          var rp=await fetch(CORS_PROXY+encodeURIComponent(links[i]),{signal:AbortSignal.timeout(6000)});
+          if(rp.ok){pages[slot].content=stripTags(await rp.text()).substring(0,25000);pages[slot].url=links[i];filled.add(slot);}
+        }catch(e){}
+      }
+    }
+  }catch(e){
+    console.warn('[StratIQ] Scrape unavailable, using AI-only analysis:',e.message);
+  }
+  return {pages:pages};
+};
+// ── END STORAGE ADAPTER ─────────────────────────────────────────────────────
+
+
 async function loadSessions(){
   try{
-    var r=await fetch('/api/sessions');
-    if(!r.ok) return;
-    var sessions=await r.json();
+    var sessions = await storage.getSessions();
     renderSessionsList(sessions);
   }catch(e){}
 }
@@ -820,9 +1038,8 @@ async function resumeSession(id){
     }
   }
   try{
-    var r=await fetch('/api/session/'+id);
-    if(!r.ok) return;
-    var sess=await r.json();
+    var sess = await storage.getSession(id);
+    if(!sess) return;
     currentSessionId=id;
     if(sess.data){
       if(sess.data.dashboard)   aiDashboard=sess.data.dashboard;
@@ -879,8 +1096,8 @@ async function resumeSession(id){
 
 async function deleteSession(id,btn){
   btn.innerHTML='...';
-  try{await fetch('/api/session/'+id,{method:'DELETE'});await loadSessions();}
-  catch(e){btn.innerHTML='&times;';}
+  try{ await storage.deleteSession(id); await loadSessions(); }
+  catch(e){ btn.innerHTML='&times;'; }
 }
 
 function buildWizardState(){
@@ -917,10 +1134,7 @@ async function _doAutoSave(){
   var st=buildWizardState();
   var cn=st.company.name||'Organisation';
   try{
-    await fetch('/api/session/'+currentSessionId+'/save',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({data_type:'wizard_state',company_name:cn,url:st.url,payload:st})
-    });
+    await storage.saveWizardState(currentSessionId, cn, st.url, st);
     flashSaved();
   }catch(e){console.warn('AutoSave failed:',e);}
 }
@@ -937,10 +1151,8 @@ async function saveSessionScan(company,sources,frameworks){
   if(!currentSessionId) currentSessionId=genUUID();
   var uv=document.getElementById('url-inp')?document.getElementById('url-inp').value:'';
   try{
-    await fetch('/api/scan/save',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({session_id:currentSessionId,company_name:company.name||'Organisation',
-        url:uv,provider:curProv,result:{company:company,sources:sources,frameworks:frameworks}})
-    });
+    await storage.saveScan(currentSessionId, company.name||'Organisation', uv, curProv,
+      {company:company, sources:sources, frameworks:frameworks});
     autoSave();
   }catch(e){console.warn('Scan save failed:',e);}
 }
@@ -949,10 +1161,11 @@ async function saveSessionGeneration(){
   if(!currentSessionId) currentSessionId=genUUID();
   var st=buildWizardState();
   try{
-    await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({session_id:currentSessionId,company_name:st.company.name||'Organisation',
-        url:st.url,provider:curProv,dashboard:aiDashboard,roadmap:aiRoadmap,document:aiDocument,aiFrameworks:aiFrameworks,
-        context:{company:st.company,frameworks:st.frameworks,audience:st.audience}})
+    await storage.saveGeneration(currentSessionId, {
+      session_id:currentSessionId, company_name:st.company.name||'Organisation',
+      url:st.url, provider:curProv, dashboard:aiDashboard, roadmap:aiRoadmap,
+      document:aiDocument, aiFrameworks:aiFrameworks,
+      context:{company:st.company, frameworks:st.frameworks, audience:st.audience}
     });
   }catch(e){console.warn('Generation save failed:',e);}
 }
@@ -1196,6 +1409,132 @@ async function callClaude(prompt, maxTok=4000, system=''){
   return d.choices[0].message.content;
 }
 
+// Web-search-enabled AI call — used for company research in web mode only
+async function callClaudeWithWebSearch(prompt){
+  const headers={'Content-Type':'application/json'};
+  let endpoint, body, parseResponse;
+
+  if(curProv==='anthropic'){
+    endpoint='https://api.anthropic.com/v1/messages';
+    headers['x-api-key']=apiKey;
+    headers['anthropic-version']='2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access']='true';
+    body={model:'claude-sonnet-4-6',max_tokens:4000,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:prompt}]};
+    parseResponse=function(d){
+      // May return text or tool_use blocks — find last text block
+      var text='';
+      if(d.content) d.content.forEach(function(b){if(b.type==='text') text=b.text;});
+      return text;
+    };
+
+  } else if(curProv==='openai'){
+    // OpenAI Responses API with web search preview
+    endpoint='https://api.openai.com/v1/responses';
+    headers['Authorization']='Bearer '+apiKey;
+    body={model:'gpt-4o',tools:[{type:'web_search_preview'}],
+      input:prompt,max_output_tokens:4000};
+    parseResponse=function(d){
+      // Responses API returns output array
+      var text='';
+      if(d.output) d.output.forEach(function(b){
+        if(b.type==='message' && b.content)
+          b.content.forEach(function(c){if(c.type==='output_text') text+=c.text;});
+      });
+      return text;
+    };
+
+  } else if(curProv==='google'){
+    endpoint=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    body={contents:[{parts:[{text:prompt}]}],
+      tools:[{googleSearch:{}}],
+      generationConfig:{maxOutputTokens:4000}};
+    parseResponse=function(d){return d.candidates[0].content.parts[0].text;};
+
+  } else {
+    // OpenRouter — use Perplexity Sonar which has built-in web search
+    endpoint='https://openrouter.ai/api/v1/chat/completions';
+    headers['Authorization']='Bearer '+apiKey;
+    body={model:'perplexity/sonar',max_tokens:4000,
+      messages:[{role:'user',content:prompt}]};
+    parseResponse=function(d){return d.choices[0].message.content;};
+  }
+
+  const r=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.text();throw new Error(`AI error ${r.status}: ${e.slice(0,200)}`);}
+  const d=await r.json();
+  return parseResponse(d);
+}
+
+// AI-research prompt — used when live scraping is unavailable (web mode)
+// Instructs AI to research the company using its own knowledge + web search
+function buildResearchPrompt(urlVal){
+  return `You are an IT and cybersecurity strategy analyst. Research the company at this URL: ${urlVal}
+
+Use your training knowledge and web search to find publicly available information about this company.
+Research their: homepage, about page, leadership team, recent news, products/services, and technology signals.
+
+Return ONLY a JSON object (no markdown, no preamble) in this exact structure:
+{
+  "company": {
+    "name": "Proper company trading name",
+    "industry": "Primary industry/sector",
+    "region": "Country/region of headquarters",
+    "size": "Employee count estimate or range",
+    "growth_stage": "Growth stage (e.g. Active Growth, Stable, Startup, Enterprise)"
+  },
+  "sources": [
+    {
+      "key": "homepage",
+      "label": "Homepage",
+      "url": "${urlVal}",
+      "icon": "globe",
+      "signals": [
+        {"id": "h1", "cat": "Vision", "text": "Signal text here"}
+      ]
+    },
+    {
+      "key": "about",
+      "label": "About Us",
+      "url": "${urlVal}",
+      "icon": "building",
+      "signals": [{"id": "a1", "cat": "Structure", "text": "Signal text here"}]
+    },
+    {
+      "key": "news",
+      "label": "News & Press",
+      "url": "${urlVal}",
+      "icon": "news",
+      "signals": [{"id": "n1", "cat": "Growth", "text": "Signal text here"}]
+    },
+    {
+      "key": "leadership",
+      "label": "Leadership Team",
+      "url": "${urlVal}",
+      "icon": "star",
+      "signals": [{"id": "l1", "cat": "Leadership", "text": "Signal text here"}]
+    }
+  ],
+  "frameworks": [
+    {"id": "iso_27001", "name": "ISO 27001", "priority": "Recommended", "reason": "One sentence specific to THIS company."}
+  ]
+}
+
+Signal categories: Vision, Mission, Tagline, Sector, Geography, Scale, Tech Signal, Growth, Brand, Values, History, Structure, Leadership, Workforce, Governance, Compliance, Expansion, M&A, Technology, Awards, Sustainability, Risk, Partnership, Investment, Innovation, CISO, CTO, CIO, CEO.
+
+Rules:
+- Extract 5-15 signals per source based on what you find
+- Flag missing CISO, CTO, CIO roles explicitly in leadership signals
+- Flag regulatory exposure (GDPR, healthcare, government contracts, financial services)
+- Flag technology signals: cloud adoption, AI mentions, digital transformation
+- Signal IDs unique: h1-hN homepage, a1-aN about, n1-nN news, l1-lN leadership
+- Framework priority: Mandatory=regulatory requirement, Recommended=strongly applicable, Consider=relevant but not urgent
+- Max 2 Mandatory, 2 Recommended, 3 Consider frameworks
+- Framework IDs: nca_ecc, adhics, uae_pdpl, sama_csf, nca_cscc, gdpr, nis2, dora, uk_gdpr, ncsc_caf, nist_csf, nist_80053, hipaa, pci_dss, ccpa, cmmc, asd_e8, apra_cps234, mas_trm, pdpa_sg, dpdp, rbi_cyber, iso_27001, iso_22301, itil4
+Return ONLY the JSON object. No explanation.`;
+}
+
 function buildSignalPrompt(pages, urlVal){
   const parts=[];
   if(pages.homepage?.content) parts.push(`=== HOMEPAGE ===\n${pages.homepage.content.slice(0,2500)}`);
@@ -1297,7 +1636,9 @@ async function startScan(){
   if(!apiKey){scanError('API key not set — please go back and click Initialize.');return;}
   const urlVal=document.getElementById('url-inp').value.trim();
   if(!urlVal){return;}
-  const steps=['Connecting to domain...','Scraping homepage...','Scraping About & News pages...','Scraping leadership signals...','Sending to AI for analysis...','Extracting strategic intelligence...','Intelligence compilation complete.'];
+
+  // AI research is primary for ALL modes. Scraping is Docker-only fallback.
+  const steps=['Connecting to domain...','Researching company online...','Analysing public information...','Identifying leadership signals...','Sending to AI for analysis...','Extracting strategic intelligence...','Intelligence compilation complete.'];
   document.getElementById('url-form').style.display='none';
   document.getElementById('scan-prog').style.display='block';
   // Remove any previous error
@@ -1318,31 +1659,42 @@ async function startScan(){
     await new Promise(r=>setTimeout(r,400));
     scanStep(0,steps.length,steps[0],true);
 
-    // Step 1 — scrape via Flask
+    // Steps 1-3 — visual progress (AI research runs in step 4)
     scanStep(1,steps.length,steps[1]);
-    const scrapeRes=await fetch('/api/scrape',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url:urlVal})
-    });
-    if(!scrapeRes.ok) throw new Error('Scrape failed: '+scrapeRes.status);
-    const scrapeData=await scrapeRes.json();
+    await new Promise(r=>setTimeout(r,300));
     scanStep(1,steps.length,steps[1],true);
 
-    // Step 2 — about & news pages (already scraped, just visual)
     scanStep(2,steps.length,steps[2]);
     await new Promise(r=>setTimeout(r,300));
     scanStep(2,steps.length,steps[2],true);
 
-    // Step 3 — leadership (already scraped, just visual)
     scanStep(3,steps.length,steps[3]);
     await new Promise(r=>setTimeout(r,300));
     scanStep(3,steps.length,steps[3],true);
 
-    // Step 4 — send to AI
+    // Step 4 — AI research (primary for ALL modes)
+    // AI uses its own knowledge + web search to research the company.
+    // Falls back to live scrape only if AI web search call fails (Docker only).
     scanStep(4,steps.length,steps[4]);
-    const prompt=buildSignalPrompt(scrapeData.pages, urlVal);
-    const aiRaw=await callClaude(prompt);
+    let prompt, aiRaw;
+    try {
+      prompt = buildResearchPrompt(urlVal);
+      aiRaw = await callClaudeWithWebSearch(prompt);
+    } catch(webSearchErr) {
+      // Fallback: live scrape + standard AI analysis (Docker only)
+      if(BACKEND_AVAILABLE){
+        console.warn('[StratIQ] AI web search failed, falling back to scrape:', webSearchErr.message);
+        try{
+          const scrapeData = await storage.scrape(urlVal);
+          prompt = buildSignalPrompt(scrapeData.pages, urlVal);
+          aiRaw = await callClaude(prompt);
+        } catch(scrapeErr){
+          throw new Error('Both AI research and scrape failed. Check your API key and connection.');
+        }
+      } else {
+        throw webSearchErr;
+      }
+    }
     scanStep(4,steps.length,steps[4],true);
 
     // Step 5 — parse AI response
@@ -2693,19 +3045,10 @@ async function saveLandscapeData(e){
   var btn=e?e.target:document.querySelector('[onclick*="saveLandscapeData"]');
   if(btn){btn.textContent='Saving...';btn.disabled=true;}
   try{
-    var r=await fetch('/api/session/'+currentSessionId+'/save',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        data_type:'landscape',
-        company_name:'Organisation',
-        url:'',
-        payload:{
-          inventory:lsInventory,
-          gaps:LS_GAPS.map(function(g){return {text:g.text,sev:g.sev,src:g.src};}),
-          savedAt:new Date().toISOString()
-        }
-      })
+    await storage.saveLandscape(currentSessionId, {
+      inventory:lsInventory,
+      gaps:LS_GAPS.map(function(g){return {text:g.text,sev:g.sev,src:g.src};}),
+      savedAt:new Date().toISOString()
     });
     if(btn){
       btn.textContent='Saved!';
@@ -3145,7 +3488,7 @@ function lsRemoveOrgCustom(idx){
 }
 
 updProg();
-loadSessions();
+detectBackend().then(function(){ loadSessions(); });
 loadSavedKey();
 var _vn=document.getElementById('ver-num');if(_vn)_vn.textContent=STRATIQ_VERSION;
 var _rvn=document.getElementById('res-ver-num');if(_rvn)_rvn.textContent=STRATIQ_VERSION;
