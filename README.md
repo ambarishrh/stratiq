@@ -310,7 +310,10 @@ For GitHub Pages mode: clear your browser's IndexedDB for `ambarishrh.github.io`
 
 ## Strategic Framework & Attribution
 
-StratIQ's strategy generation methodology is inspired by the published work of **[Dr. Muhammad Malik](https://www.linkedin.com/in/dr-muhammad-malik-45940a/)**.
+StratIQ's strategy generation engine draws on a broad body of established frameworks, methodologies, and published research — synthesised into a single coherent output that a CISO or CIO can walk into a boardroom with.
+
+### Communication Philosophy
+The language principles and communication framework are inspired by the published work of **[Dr. Muhammad Malik](https://www.linkedin.com/in/dr-muhammad-malik-45940a/)**.
 
 > *"Clarity Over Controls: The One-Page Cybersecurity Strategy Every CISO Needs"*
 >
@@ -318,7 +321,28 @@ StratIQ's strategy generation methodology is inspired by the published work of *
 >
 > *"Securing What Matters: Why Cyber Strategy Must Start with Business Truths"*
 
-**Core principles applied throughout:** Clarity over controls. Direction over decoration. Business language over technical jargon. Risk in dollars, not CVSS scores. Vision as one business outcome sentence. Strategy as a loop, not a one-time plan.
+**Principles applied throughout:** Clarity over controls. Direction over decoration. Business language over technical jargon. Risk in dollars, not CVSS scores. Vision as one business outcome sentence. Strategy as a loop, not a one-time plan.
+
+### Strategic Intelligence Frameworks
+The 9 business intelligence lenses used to analyse organisations and generate context-aware strategy:
+
+| Lens | Applied As |
+|------|-----------|
+| **OCAI Culture Model** | Infers org culture type from signals; adapts language (clan = storytelling, hierarchy = policies, market = ROI, adhocracy = innovation) |
+| **SWOT Analysis** | Business lens mapped to NIST CSF initiative categories |
+| **Porter's Five Forces** | Competitive forces translated into security priority areas |
+| **Business Model Canvas** | Identifies what breaks under attack — crown jewels and critical dependencies |
+| **Strategy Map (Kaplan & Norton)** | Capability → enabler → operational → financial → customer chain |
+| **Stakeholder Mapping** | Adapts language and framing to power/interest/skill of the audience |
+| **Crown Jewels Analysis** | Asset criticality, RTO, and business function mapping |
+| **PESTEL Analysis** | External macro forces mapped to NIST CSF initiative priorities |
+| **Business + Threat Timeline** | Growth milestones correlated against emerging threat trajectory |
+
+### Risk Quantification
+Risk scoring and financial exposure estimates follow the **FAIR methodology** (Factor Analysis of Information Risk) — frequency × impact framing, expressed in local currency, never CVSS scores.
+
+### Cybersecurity Frameworks
+Framework recommendations, control mappings, and compliance obligations draw on the official published documentation of 25 frameworks including NCA ECC, ADHICS, UAE PDPL, ISO 27001, NIST CSF 2.0, GDPR, and others. See the [Global Framework Intelligence](#global-framework-intelligence) section for the full list.
 
 <br/>
 
