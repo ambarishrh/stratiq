@@ -4,6 +4,25 @@ All notable changes to StratIQ are documented here.
 
 ---
 
+## [2.9.4] — 2026-03-17
+
+### Fixed — Framework Selection UX
+
+- **Mandatory frameworks are no longer permanently locked.** Previously, frameworks tagged Mandatory (ADHICS, UAE PDPL, NCA ECC, etc.) were pre-selected and impossible to deselect — the checkbox showed a padlock icon and clicking had no effect. A CISO who genuinely understands their regulatory scope should be able to consciously remove a framework if it does not apply to their organisation
+- **Root cause 1:** `tFw()` had an early-return guard (`if priority === 'Mandatory') return`) that silently blocked all deselect attempts
+- **Root cause 2:** `rFw()` unconditionally called `selFw.add()` for every Mandatory framework on every render — so even after successfully removing a framework from the set, the next render immediately re-added it
+- **Root cause 3:** The card rendered `cursor: default` and a padlock SVG for Mandatory frameworks instead of the standard checkbox
+- **Fix:** Removed the early-return guard, removed the force-add loop in `rFw()`, changed cursor to `pointer`, replaced the lock icon with the standard checkmark/empty checkbox pattern used by all other tiers. Mandatory frameworks still arrive pre-selected from the AI scan; the user now has the freedom to consciously uncheck them
+
+### Improved — Homepage Attribution Footer
+
+- Footer credit block expanded from a single attribution line to a fuller acknowledgement
+- Dr. Muhammad Malik's three articles remain the primary credit ("Core strategy methodology inspired by...")
+- Added a second sentence crediting the broader intellectual foundation: Porter's Five Forces, Kaplan & Norton Strategy Maps, Osterwalder's Business Model Canvas, and the FAIR risk quantification methodology
+- Framing: "applied through a practitioner's eye to make security strategy legible to boards, not just auditors"
+
+---
+
 ## [2.9.0] — 2026-03-16
 
 ### Added — GitHub Pages Support (Zero-Install Deployment)
@@ -11,28 +30,24 @@ All notable changes to StratIQ are documented here.
 - **Live instance:** [https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/stratiq)
 - **IndexedDB persistence** — full session CRUD in browser: save, resume, delete, auto-save, landscape data, generated outputs. Data stays entirely on the user's machine — never transits a network
 - **Storage adapter pattern** — `detectBackend()` pings `/api/ping` on load with a 1.5s timeout. Flask/Docker present → `FlaskAdapter` (SQLite). No backend → `IndexedDBAdapter` (browser-native). Zero configuration — fully automatic
-- **`FlaskAdapter`** — wraps all Flask API calls behind a consistent interface (`getSessions`, `getSession`, `deleteSession`, `saveWizardState`, `saveScan`, `saveGeneration`, `saveLandscape`, `scrape`)
-- **`IndexedDBAdapter`** — identical interface, browser-native IndexedDB backend. Full session history, status tracking, auto-save support. Works on `gh-pages`, any static CDN, or local `file://` (without web search)
+- **`FlaskAdapter`** — wraps all Flask API calls behind a consistent interface
+- **`IndexedDBAdapter`** — identical interface, browser-native IndexedDB backend. Full session history, status tracking, auto-save support. Works on `gh-pages`, any static CDN, or local `file://`
 
 ### Added — AI-Powered Company Research (Primary Scan Mode)
-- **`callClaudeWithWebSearch()`** — new AI call function that enables provider-native web search for company research. No scraping, no CORS proxies, works everywhere including GitHub Pages
-  - **Anthropic:** `web_search_20250305` tool via `/v1/messages`
-  - **OpenAI:** Responses API (`/v1/responses`) with `web_search_preview` tool
-  - **Google Gemini:** grounding with `googleSearch`
-  - **OpenRouter:** routes to `perplexity/sonar` model with built-in web search
-- **`buildResearchPrompt()`** — structured prompt instructing the AI to research a company from its URL using training knowledge + live web search. Returns the same JSON schema as the scrape-based scan — signals across all 28 categories, framework recommendations, company profile. Quality is equal to or better than HTML scraping for most companies
-- **AI research is now primary for ALL deployment modes** — replaces HTML scraping as the default. Faster, richer, and immune to CORS restrictions, WAF blocks, and JavaScript-heavy sites
-- Flask scraping retained as **Docker-only fallback** — if `callClaudeWithWebSearch` throws, StratIQ falls back to BeautifulSoup scrape + `buildSignalPrompt`. No silent failures
-- Scan step labels updated: "Researching company online..." / "Analysing public information..." / "Identifying leadership signals..."
+- **`callClaudeWithWebSearch()`** — new AI call function enabling provider-native web search for company research. No scraping, no CORS proxies, works everywhere including GitHub Pages
+  - Anthropic: `web_search_20250305` tool via `/v1/messages`
+  - OpenAI: Responses API with `web_search_preview` tool
+  - Google Gemini: grounding with `googleSearch`
+  - OpenRouter: routes to `perplexity/sonar` model with built-in web search
+- **`buildResearchPrompt()`** — structured prompt instructing AI to research a company from its URL using training knowledge + live web search. Returns same JSON schema as scrape-based scan
+- AI research is now primary for ALL deployment modes — replaces HTML scraping as the default
+- Flask scraping retained as Docker-only fallback if `callClaudeWithWebSearch` throws
+- Scan step labels updated: "Researching company online..." / "Analysing public information..."
 
 ### Changed
-- **Single file serves both modes** — `stratiq_8.html` auto-detects Docker vs static hosting at runtime. No separate file to maintain
-- **All session functions** (`loadSessions`, `resumeSession`, `deleteSession`, `_doAutoSave`, `saveSessionScan`, `saveSessionGeneration`, `saveLandscapeData`) now call `storage.*` adapter — never Flask directly. Docker behaviour is 100% unchanged
+- Single file serves both modes — `stratiq_8.html` auto-detects Docker vs static hosting at runtime
+- All session functions now call `storage.*` adapter — never Flask directly
 - Version bumped: 2.8.4 → 2.9.0
-
-### Fixed
-- `api/ping` 404 on non-Docker deployments no longer surfaces as a console error — expected behaviour, falls back silently to IndexedDB mode
-- CORS proxy failures during scrape fallback no longer crash the scan — graceful degradation to AI-only analysis
 
 ---
 
@@ -43,141 +58,91 @@ All notable changes to StratIQ are documented here.
 - Constraints stored as array (`internalContext.constraints[]`); legacy single-value sessions still load correctly
 
 ### Fixed — Wishlist not reaching AI
-- `LS_WISHLIST` items were saved to SQLite but never passed to the AI prompts — invisible to strategy generation
+- `LS_WISHLIST` items were saved to SQLite but never passed to the AI prompts
 - Now serialised in `buildCtxBlock()` as "Capabilities under evaluation / pipeline" with budget status
-- AI instructed to factor pipeline capabilities into roadmap phasing (e.g. if NDR is already being evaluated, roadmap reflects that rather than recommending it from scratch)
+- AI instructed to factor pipeline capabilities into roadmap phasing
 
 ---
 
 ## [2.8.3] — 2026-03-15
 
 ### Fixed — Scan Error Visibility
-- **Errors were invisible to users** — the scan error div lived inside `#scan-prog` which was being hidden on error, so users saw the URL form reappear with no explanation. Now the scan progress panel stays visible on error so the message is always shown
-- **"Try Again" button** added to every error state — resets cleanly back to the URL input without a page reload
-- **500 / provider unavailable** error now has a clear user-facing message: "AI provider temporarily unavailable — wait and retry, or switch provider"
-- **Network errors** (`ERR_CONNECTION`, `NetworkError`, `Failed to fetch`) now handled separately with a helpful suggestion to try OpenRouter if direct provider is blocked
-- **Generic fallback** no longer dumps the raw technical error string — shows "Something went wrong. Try again or switch AI provider" instead
-- **401 invalid key** detection improved to also catch `invalid x-api-key` response text
+- Errors were invisible to users — the scan error div lived inside `#scan-prog` which was being hidden on error
+- "Try Again" button added to every error state — resets cleanly back to URL input without a page reload
+- Five distinct error states now surface correctly: 500/provider unavailable, network errors, 401 invalid key, 429 rate limit, generic fallback
+- Generic fallback no longer dumps raw technical error strings
 
 ---
 
 ## [2.8.2] — 2026-03-15
 
 ### Fixed — URL Scraping
-- **Leadership page not found on query-param navigation sites**: `best_match()` in `server.py` now checks the full URL including query string, not just the path segment. Previously URLs like `/who-we-are?section=leadership-team` were reduced to `/who-we-are` before keyword matching, causing leadership content to be missed entirely on sites that use query parameters for section navigation
-- **Wrong company name inferred from domain**: `buildSignalPrompt()` now receives the scanned URL and passes a domain hint to the AI with an explicit instruction to derive the proper trading name from page content (logo alt text, page title, about section) first, falling back to a clean derivation from the domain — e.g. `holding.com → Company Holding`. Prevents the AI from returning the raw domain URL as the company name
-- `_ABOUT_KEYS` and `_LEADERSHIP_KEYS` in `server.py` expanded to include `our-journey`, `our-history`, `history`, `founders`, `people`, `governance`, `senior`
+- Leadership page not found on query-param navigation sites: `best_match()` in `server.py` now checks full URL including query string
+- Wrong company name inferred from domain: `buildSignalPrompt()` now receives the scanned URL and passes a domain hint to the AI
+- `_ABOUT_KEYS` and `_LEADERSHIP_KEYS` in `server.py` expanded
 
 ---
 
 ## [2.8.1] — 2026-03-15
 
 ### Fixed
-- Framework "Add" field: replaced dead free-text input with a grouped `<select>` dropdown populated from the full `FW_LIBRARY` (25 frameworks, grouped by region). The `+ ADD` button now correctly wires the selection into `aiFrameworks` as "Consider" priority and re-renders the list
+- Framework "Add" field: replaced dead free-text input with a grouped `<select>` dropdown populated from the full `FW_LIBRARY` (25 frameworks, grouped by region)
 - OpenRouter model updated from `claude-sonnet-4-5` to `claude-sonnet-4-6`
 
 ### Improved — Document Quality
-- **Section 1 (Executive Summary):** Now requires named risk + specific financial exposure range + investment figure + single board ask. Eliminates generic "maintain business continuity" language
-- **Section 4 (Pillars):** Each pillar now requires 2–3 sentences covering: what it builds, the specific business consequence if neglected, and what measurable success looks like at year 3
-- **Section 7 (Regulatory):** Now explicitly covers ALL selected frameworks including Recommended — previously only wrote about Mandatory frameworks
-- **Section 8 (Roadmap Summary):** Now requires exact initiative titles from the generated roadmap, per-phase budgets, and a year-3 outcome paragraph
-- Dr. Muhammad Malik's principles injected as system-level rules into every document generation: risk in dollars, clarity over controls, vision as one business outcome sentence, never surprise the CEO
+- Section 1 (Executive Summary): Now requires named risk + specific financial exposure range + investment figure + single board ask
+- Section 4 (Pillars): Each pillar now requires 2–3 sentences covering what it builds, the business consequence if neglected, and measurable success at year 3
+- Section 7 (Regulatory): Now explicitly covers ALL selected frameworks including Recommended
+- Section 8 (Roadmap Summary): Now requires exact initiative titles, per-phase budgets, and a year-3 outcome paragraph
+- Dr. Muhammad Malik's principles injected as system-level rules into every document generation
 
 ---
 
 ## [2.8.0] — 2026-03-15
 
 ### Added — Framework-Aware Prompt Engine
-- `FW_LIBRARY` expanded: all 25 frameworks now include `domains[]` (key control areas) and `obligations` (what compliance actually requires in plain terms)
-- `buildFrameworkContext()` — new helper that serialises selected frameworks with their domains and obligations into a rich context block, injected into all three AI prompts
-- Dashboard: strategic pillars now derived from the **combined domains of ALL selected frameworks** — NIST CSF 2.0 used as a completeness check only, not structural organiser
-- Dashboard: 6th risk domain is framework-specific (e.g. "Patient Data Security" for ADHICS, "Payment Data Integrity" for PCI-DSS)
-- Roadmap: **MANDATORY FRAMEWORK RULE** — every Mandatory framework gets at least one dedicated compliance initiative named in the roadmap
-- Roadmap: initiative domains derived from selected framework vocabulary, not hardcoded Cyber/IT/Compliance
-- Document: Regulatory section (Section 7) now writes one substantive paragraph per selected framework linking it to org-specific gaps, roadmap response, and non-compliance consequence in financial terms
+- `FW_LIBRARY` expanded: all 25 frameworks now include `domains[]` and `obligations`
+- `buildFrameworkContext()` — new helper serialising selected frameworks into a rich context block
+- Dashboard pillars now derived from the combined domains of ALL selected frameworks
+- Roadmap: MANDATORY FRAMEWORK RULE — every Mandatory framework gets at least one dedicated compliance initiative
+- Document: Regulatory section (Section 7) writes one substantive paragraph per selected framework
 
 ### Fixed
-- NCA ECC corrected in `FW_LIBRARY`: this is a **Saudi** framework (National Cybersecurity Authority of Saudi Arabia), not UAE. Region tag corrected from "UAE" to "Saudi Arabia"
+- NCA ECC corrected: Saudi framework, not UAE
 
 ---
 
 ## [2.7.0] — 2026-03-15
 
-### Improved — Prompt Quality Rebuild (Global Best Practices)
+### Improved — Prompt Quality Rebuild
 
-**Dashboard prompt**
-- KPI 4 changed from vague "maturity" to quantified financial risk exposure (FAIR methodology framing)
-- Pillar count increased to 5–6 with instruction to cover all NIST CSF 2.0 functions
-- Risk domain rationale now requires business consequence, not technical description
-
-**Roadmap prompt**
-- Every initiative now requires: `owner`, `successCriteria`, `effort` alongside existing fields
-- Budget is currency-agnostic (local currency from region signals, defaults to USD)
-- 10 hard execution rules embedded:
-  - AI security threat initiative mandatory (AI-enhanced phishing, deepfakes — #1 emerging risk 2025–2026)
-  - Zero Trust architecture initiative mandatory
-  - Security Awareness and Human Risk initiative mandatory
-  - Governance/board reporting initiative mandatory
-  - Constraint and budget signals from Internal Context feed sequencing
-  - Every gap must be addressed; inventory not re-recommended
-
-**Document prompt**
-- Rebuilt from 8 to **12 sections**:
-  1. Executive Summary
-  2. Business Context & Why Now
-  3. **Threat Landscape** *(new)*
-  4. Strategic Vision & Pillars
-  5. **Governance & Operating Model** *(new)*
-  6. Current State Assessment
-  7. Regulatory & Compliance Obligations
-  8. 3-Year Roadmap Summary
-  9. **Resource Plan** *(new)*
-  10. **Risk Quantification** *(new — FAIR methodology)*
-  11. Measuring Success — KPIs & Review Cadence
-  12. **Quick Wins — Start Here** *(new)*
-- Token limit raised from 8,000 to 12,000 for full document; Board version stays at 4,000
-- Roadmap initiative owner/successCriteria fields now shown in roadmap card renderer
+- Dashboard: KPI 4 changed to quantified financial risk exposure (FAIR methodology); 5–6 pillars covering all NIST CSF 2.0 functions
+- Roadmap: Every initiative now requires `owner`, `successCriteria`, `effort`; 10 hard execution rules embedded including mandatory AI security threat initiative, Zero Trust, Security Awareness
+- Document: Rebuilt from 8 to 12 sections; token limit raised to 12,000; new sections: Threat Landscape, Governance & Operating Model, Resource Plan, Risk Quantification, Quick Wins
 
 ---
 
 ## [2.6.1] — 2026-03-15
 
 ### Fixed
-- `startScan()` now grabs API key directly from the input field if `apiKey` variable is unset — fixes 401 errors when saved key (pre-filled by `loadSavedKey()`) is not formally initialised via the Initialize button
+- `startScan()` now grabs API key directly from input field if `apiKey` variable is unset — fixes 401 errors when saved key is pre-filled but not formally initialised
 
 ---
 
 ## [2.6.0] — 2026-03-15
 
 ### Added — Internal Context Interview (Phase 3A)
-- New wizard step between Company Profile and Frameworks: **Internal Context Interview**
-- 14 structured questions covering:
-  - Annual IT/Security budget (currency-agnostic bands: <$100K → $10M+)
-  - Organisation headcount and IT team size
-  - Dedicated security team Y/N
-  - CISO/security lead role Y/N with title field
-  - Last significant security incident (5 options)
-  - Board attitude to cyber risk (4 options)
-  - Top business risks (AI pre-filled chips from scan + custom add)
-  - Biggest constraint (Budget / People / Executive buy-in / All three)
-  - Compliance deadline pressure with timeframe
-  - Cloud adoption stage
-  - Remote/hybrid workforce %
-  - Third-party/vendor risk exposure
-  - Free-text board notes
-- `internalContext` state var — fully serialised in `buildWizardState()`, restored on session resume
-- `buildCtxBlock()` — serialises context into prompt block injected into all 3 AI prompts
-- Business risks pre-populated from `aiDashboard.risks` if scan complete; falls back to 8 example risks
-- Note displayed: "Already approved a tool? Add it to Tools Inventory" — prevents duplicate input
-- Progress bar updated to 8 steps
+- New wizard step between Company Profile and Frameworks
+- 14 structured questions covering budget, headcount, IT team, CISO role, last incident, board attitude, top risks, constraints, compliance deadline, cloud stage, remote workforce, vendor risk, board notes
+- `internalContext` state var fully serialised and restored on session resume
+- `buildCtxBlock()` serialises context into prompt block injected into all 3 AI prompts
 
 ---
 
 ## [2.5.0] — 2026-03-14
 
 ### Added
-- Export dropdown: Print/Save as PDF (window.print + print CSS), Copy Document Text (clipboard markdown), Download JSON
-- Menu shows only options relevant to what was generated
+- Export dropdown: Print/Save as PDF, Copy Document Text, Download JSON
 - Print CSS: hides all UI chrome, renders all generated tabs for print (A4)
 
 ---
@@ -186,14 +151,8 @@ All notable changes to StratIQ are documented here.
 
 ### Added — Audience-Aware Generation
 - `audTone()` — shared function injecting tone/depth/framing into all 3 prompts per audience
-- `selAudFn()` — audience selection auto-sets output formats:
-  - CISO → Dashboard + Document
-  - CIO → Roadmap + Document
-  - CISO+CIO → All 3
-  - Board → Dashboard only
-- `startGen()` — skips AI calls for unselected outputs (real token savings)
+- CISO → Dashboard + Document; CIO → Roadmap + Document; CISO+CIO → All 3; Board → Dashboard only
 - Board document: 5 sections, 4,000 tokens, zero jargon
-- Results tabs hide unselected outputs, auto-activate first visible
 
 ---
 
@@ -201,16 +160,9 @@ All notable changes to StratIQ are documented here.
 
 ### Added — Global AI-Driven Framework Recommendation Engine
 - Replaced static 6-framework list with `FW_LIBRARY` — 25 globally relevant frameworks
-- `buildSignalPrompt()` extended — AI returns `frameworks[]` in same scan JSON (zero extra tokens)
-- `aiFrameworks` state var — AI populates after scan, drives all framework logic
 - Tiered UI: Mandatory (pre-selected) / Recommended (pre-selected) / Also Consider (not selected)
 - Company-specific AI reason per framework + library educational description
-- Fallback defaults if AI returns no frameworks: ISO 27001 + NIST CSF 2.0
-- `aiFrameworks` saved to SQLite + restored on session resume
-
-### Fixed
-- Scan error messages now actionable: 402 (no credits) → link to OpenRouter top-up; 401 → check key; 429 → wait 30s; 404 → Docker not running; parse failure → retry
-- `lsAddGap()`, `lsAddOrgContext()`, `lsRemoveOrgCustom()` — all now call `autoSave()` correctly
+- Fallback defaults: ISO 27001 + NIST CSF 2.0
 
 ---
 
@@ -218,54 +170,36 @@ All notable changes to StratIQ are documented here.
 
 ### Added
 - localStorage API key + provider persistence — pre-fills on next visit
-- "Saved" badge + "Forget" link on API key field
-- Eye icon to show/hide key
-- "Check Balance" button — OpenRouter returns live credit balance; others show honest explanation
-- server.py: `_LEADERSHIP_KEYS` expanded with `our-history`, `history`, `founders`, `people`, `governance`, `senior`
-- Leadership content slice bumped 1,500 → 3,000 chars
+- "Saved" badge + "Forget" link on API key field; eye icon to show/hide key
+- "Check Balance" button — OpenRouter returns live credit balance
 
 ---
 
 ## [2.1.0] — 2026-03-08
 
 ### Added — Real AI Generation + Session Persistence
-- `buildStrategyContext()` — collects company, signals, frameworks, inventory, gaps, audience
-- `buildDashboardPrompt()` / `buildRoadmapPrompt()` / `buildDocumentPrompt()`
-- `startGen()` — real async 3-call AI sequence with graceful per-call fallback
-- `rDash()` / `rRoad()` / `rDoc()` — AI-data-aware rendering, static baseline fallback if AI fails
-- Full wizard state auto-saved to SQLite on every mutation (17+ hooks)
+- Full wizard state auto-saved to SQLite on every mutation
 - Session resume — fully restores all wizard state
-- Session cards — status stripe, relative time, Resume CTA
 - `STRATIQ_VERSION` constant and version pill
 - Edit & Regenerate button in results header
-- Fixes: stale AI vars on regeneration, CORS header for Anthropic browser-direct calls, double-`goTo` race condition
 
 ---
 
-## [2.0.0] — 2026-02-28 (Phase 2 begins)
+## [2.0.0] — 2026-02-28
 
 ### Added — Real Scan Pipeline
 - `callClaude()` — provider-agnostic, handles Anthropic, OpenAI, Google Gemini, OpenRouter
-- `buildSignalPrompt()` — structured prompt for signal + company + framework extraction
 - `startScan()` replaced stub with real async scrape → AI → parse → navigate flow
-- `/api/scrape` endpoint added to server.py (BeautifulSoup scraping)
 - Architecture confirmed: browser-direct AI calls, Flask handles scraping + SQLite only
-- OpenRouter confirmed as EDR-safe provider for corporate firewall environments
 
 ---
 
-## [1.0.0] — 2026-02-01 (Phase 1 — Design & UI)
+## [1.0.0] — 2026-02-01
 
 ### Added
 - Single HTML file architecture (no frameworks, no build tools)
 - Full 7-step wizard: API key, URL, Sources, Company Profile, Frameworks, Landscape, Output
 - Results screen: sticky header, 3 tabs (Dashboard / Roadmap / Document)
-- Dashboard: KPI cards, risk domain progress bars, framework alignment, strategic pillars
-- Roadmap: 3-phase timeline (0–6mo, 6–12mo, 1–3yr), initiative cards
-- Document: formal document with document control table, 8 sections, signature block
-- Landscape: 68-category tools inventory, gaps, wishlist, replace, org context chips
-- Framework selection: 6 frameworks with rationale
-- Light theme (default) + dark theme, DM Sans font
 - Flask backend: SQLite sessions, full CRUD API
 - Dr. Muhammad Malik attribution on homepage
 - CC BY-NC-SA 4.0 license

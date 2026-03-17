@@ -12,7 +12,7 @@
 <br/>
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ambarishrh/stratiq?style=flat-square&logo=docker&logoColor=white&color=2496ED&label=Docker%20Pulls)](https://hub.docker.com/r/ambarishrh/stratiq)
-[![Version](https://img.shields.io/badge/Version-2.9.0-006ECC?style=flat-square)](https://github.com/ambarishrh/stratiq/releases)
+[![Version](https://img.shields.io/badge/Version-2.9.4-006ECC?style=flat-square)](https://github.com/ambarishrh/stratiq/releases)
 [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
 [![BYOK](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-28a745?style=flat-square)](https://openrouter.ai)
 [![Privacy](https://img.shields.io/badge/Data-100%25%20Local-success?style=flat-square)](#privacy--security)
@@ -159,7 +159,9 @@ Your API key is stored only in your browser's localStorage — never transmitted
 
 ## Global Framework Intelligence
 
-StratIQ recommends frameworks based on your company's geography, sector, and regulatory signals — not a hardcoded default list. 25 frameworks across all major regions, with full domain and obligation context:
+StratIQ recommends frameworks based on your company's geography, sector, and regulatory signals — not a hardcoded default list. 25 frameworks across all major regions, with full domain and obligation context.
+
+All frameworks are **pre-selected by AI based on your scan** but remain fully editable — you can uncheck any framework, including ones tagged Mandatory, if it genuinely does not apply to your organisation. Mandatory means "regulatory requirement if you operate in this geography/sector" — not "you cannot remove it."
 
 | Region | Frameworks |
 |--------|-----------|
@@ -173,11 +175,11 @@ StratIQ recommends frameworks based on your company's geography, sector, and reg
 | 🇮🇳 India | DPDP Act, RBI Cybersecurity |
 | 🌐 Global | ISO 27001, ISO 22301, ITIL 4 |
 
-Frameworks are presented in three tiers: 🔴 **Mandatory** (pre-selected) · 🔵 **Recommended** (pre-selected) · ⚪ **Also Consider** (user opts in)
+Frameworks are presented in three tiers: 🔴 **Mandatory** (pre-selected, editable) · 🔵 **Recommended** (pre-selected, editable) · ⚪ **Also Consider** (user opts in)
 
 Any framework from the library can be added from a grouped dropdown — no free-text guessing.
 
-**Framework-aware generation:** When you select ISO 27001 + GDPR + ADHICS, the AI generates pillars named *Information Security Governance*, *Data Privacy & Subject Rights*, and *Healthcare Information Security* — not generic NIST boilerplate. Every Mandatory framework gets a dedicated compliance initiative in the roadmap. The regulatory section writes one substantive paragraph per framework linking it to your specific gaps and roadmap.
+**Framework-aware generation:** When you select ISO 27001 + GDPR + ADHICS, the AI generates pillars named *Information Security Governance*, *Data Privacy & Subject Rights*, and *Healthcare Information Security* — not generic NIST boilerplate. Every Mandatory framework gets a dedicated compliance initiative in the roadmap.
 
 <br/>
 
@@ -220,7 +222,7 @@ The full 12-section document is built for execution, not decoration:
 3. **Review Sources** — Review extracted signals, deselect or remove individual signals
 4. **Company Profile** — Confirm AI-inferred company name, industry, region, size, stage
 5. **Internal Context** — 14-question interview: budget, headcount, team, incidents, board attitude, constraints
-6. **Frameworks** — Review AI-recommended frameworks by tier; add from full library dropdown
+6. **Frameworks** — Review AI-recommended frameworks by tier; add from full library dropdown; uncheck any that don't apply
 7. **IT Landscape** — Tools inventory (68 categories), gaps, wishlist, replacements, org context
 8. **Output Config** — Select audience and output formats
 9. **Generate** — 3 sequential AI calls; export via PDF/print, copy to clipboard, or JSON download
@@ -259,6 +261,8 @@ The `docker rmi` step removes any cached local image, ensuring you get the actua
 
 Session history is preserved in the `stratiq_data` volume across updates.
 
+**GitHub Pages:** Simply refresh your browser. No install step required — the live instance at [https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/stratiq) always serves the latest version.
+
 <br/>
 
 ## Building from Source
@@ -288,6 +292,9 @@ No. Open [https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/str
 
 **We already have a corporate strategy document — how does that help?**
 If you have a written organisational strategy, use it as your primary input. StratIQ's AI research gives a starting point by inferring strategy from public signals — your real internal strategy will always be richer. The best use in that case is alignment validation: does your IT and cybersecurity roadmap actually support where the business says it's going?
+
+**Can I remove a Mandatory framework?**
+Yes. Mandatory means the AI assessed it as a regulatory requirement given your geography or sector — it does not mean you are forced to include it. A CISO who understands their regulatory scope can uncheck any framework. Pre-selected does not mean locked.
 
 **What if the scan returns limited signals?**
 StratIQ flags inaccessible information and generates from whatever signals were collected. You can add context manually in the Internal Context Interview and Organisational Context sections before generating.
@@ -323,7 +330,7 @@ The language principles and communication framework are inspired by the publishe
 
 **Principles applied throughout:** Clarity over controls. Direction over decoration. Business language over technical jargon. Risk in dollars, not CVSS scores. Vision as one business outcome sentence. Strategy as a loop, not a one-time plan.
 
-### Strategic Intelligence Frameworks
+### Business Strategy Lenses
 The 9 business intelligence lenses used to analyse organisations and generate context-aware strategy:
 
 | Lens | Applied As |
