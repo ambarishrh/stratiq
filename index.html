@@ -47,11 +47,11 @@ input:focus{border-color:var(--border2);}
 /* WIZARD */
 #wiz-prog{position:fixed;top:0;left:0;right:0;z-index:200;height:3px;background:var(--border);}
 #wiz-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));width:0%;transition:width .5s ease;box-shadow:0 0 10px var(--accent-glow);}
-#wiz-dots{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:200;}
-.dot{height:7px;border-radius:4px;background:var(--border);transition:all .35s;}
-.dot.on{width:22px;background:var(--accent);}
-.dot.done{width:7px;background:var(--accent-dim);}
-.dot.off{width:7px;}
+#wiz-dots{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:200;}
+.dot{width:7px;height:7px;border-radius:4px;background:var(--border);transition:all .35s;}
+.dot.on{width:7px;height:22px;background:var(--accent);}
+.dot.done{width:7px;height:7px;background:var(--accent-dim);}
+.dot.off{width:7px;height:7px;}
 /* ANIMATIONS */
 @keyframes pulse-ring{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(2.8);opacity:0}}
 .pulse{position:relative;display:inline-flex;align-items:center;justify-content:center;}
@@ -104,6 +104,15 @@ td{padding:8px 12px;border-top:1px solid #e2e8f0;}
   a{color:#000!important;}
   .prog-fill{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
+/* TOOLTIP */
+.ctx-tooltip{position:relative;display:inline-flex;align-items:center;cursor:help;}
+.ctx-tooltip .ctx-tip{visibility:hidden;opacity:0;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 8px);background:#0C1A2E;color:#E8EEF8;font-size:11px;font-weight:400;line-height:1.55;border-radius:8px;padding:9px 12px;width:260px;z-index:9999;pointer-events:none;transition:opacity .18s;box-shadow:0 4px 20px rgba(0,0,0,.35);white-space:normal;text-align:left;}
+[data-theme="dark"] .ctx-tip{background:#2A2618;color:#F0EAD6;}
+.ctx-tooltip .ctx-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0C1A2E;}
+[data-theme="dark"] .ctx-tip::after{border-top-color:#2A2618;}
+.ctx-tooltip:hover .ctx-tip,.ctx-tooltip:focus .ctx-tip{visibility:visible;opacity:1;}
+/* AI SUGGESTED TAG */
+.ai-sug-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-glow);border:1px solid rgba(0,110,204,.2);border-radius:4px;padding:2px 6px;margin-left:6px;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle;white-space:nowrap;}
 /* BACK BUTTON */
 .btn-back{background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;letter-spacing:.04em;}
 .btn-back:hover{border-color:var(--text-dim);color:var(--text-dim);}
@@ -123,7 +132,13 @@ td{padding:8px 12px;border-top:1px solid #e2e8f0;}
 <body>
 
 <!-- Theme Toggle -->
-<div id="ver-badge" style="position:fixed;top:14px;left:16px;z-index:300;padding:6px 11px;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:.08em;font-family:'DM Sans',sans-serif;box-shadow:0 2px 12px var(--shadow);user-select:none">v<span id="ver-num">2.1</span></div>
+<div style="position:fixed;top:14px;left:16px;z-index:300;display:flex;align-items:center;gap:8px">
+<button id="home-btn" onclick="goHome()" title="Start new analysis" style="display:none;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text-dim);transition:all .2s;user-select:none" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+Home
+</button>
+<div id="ver-badge" style="padding:6px 11px;background:var(--surface);border:1px solid var(--border);border-radius:99px;font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:.08em;font-family:'DM Sans',sans-serif;box-shadow:0 2px 12px var(--shadow);user-select:none">v<span id="ver-num">2.1</span></div>
+</div>
 <button id="theme-btn" onclick="toggleTheme()">
   <svg id="t-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
@@ -227,6 +242,7 @@ td{padding:8px 12px;border-top:1px solid #e2e8f0;}
    <p style="margin:0 0 6px;font-size:12px;color:var(--text-dim);line-height:1.6">Strategy methodology inspired by the work of</p>
    <a href="https://www.linkedin.com/in/dr-muhammad-malik-45940a/" target="_blank" style="font-size:13px;font-weight:700;color:var(--accent);text-decoration:none">Dr. Muhammad Malik</a>
    <p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);line-height:1.6;font-style:italic">"Clarity Over Controls" &nbsp;&middot;&nbsp; "Learning Cybersecurity Strategy From Zero" &nbsp;&middot;&nbsp; "Securing What Matters"</p>
+   <p style="margin:10px 0 0;font-size:11px;color:var(--text-muted);line-height:1.7">Enriched with business strategy lenses drawn from Porter, Kaplan &amp; Norton, Osterwalder, and the FAIR risk quantification model &mdash; applied through a practitioner's eye to make security strategy legible to boards, not just auditors.</p>
   </div>
  </div>
 </div>
@@ -341,7 +357,7 @@ td{padding:8px 12px;border-top:1px solid #e2e8f0;}
      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
      <div>
       <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Growth Trajectory Signal</div>
-      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin:0">Active regional expansion — 3 new market entries detected in past 6 months. Recent M&amp;A activity. Digital transformation signals strong across technology and aviation divisions.</p>
+      <p id="growth-signal-text" style="font-size:13px;color:var(--text-dim);line-height:1.6;margin:0">Scan a company URL to see growth trajectory signals here.</p>
      </div>
     </div>
    </div>
@@ -679,7 +695,7 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.9.0';
+const STRATIQ_VERSION='2.9.4';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
 
@@ -1015,6 +1031,11 @@ function renderSessionsList(sessions){
 }
 
 async function resumeSession(id){
+  // Guard: storage may not be initialized yet (detectBackend still resolving)
+  if(!storage){
+    await new Promise(function(r){setTimeout(r,800);});
+    if(!storage){ console.warn('Storage not ready — retry resume'); return; }
+  }
   // If apiKey not yet set, try grabbing it from the input field directly
   // (user typed a key but hasn't clicked Initialize yet)
   if(!apiKey){
@@ -1064,6 +1085,8 @@ async function resumeSession(id){
         if(ff[2])ff[2].value=co.region||'';
         if(ff[3])ff[3].value=co.size||'';
         if(ff[4])ff[4].value=co.growth||co.growth_stage||'';
+        var _gst2=document.getElementById('growth-signal-text');
+        if(_gst2&&co.growth_signal) _gst2.textContent=co.growth_signal;
       }
       var srcs=base.sources;
       if(srcs&&srcs.length>0){
@@ -1088,9 +1111,13 @@ async function resumeSession(id){
         if(ws.internalContext) internalContext=ws.internalContext;
       }
     }
-    if(sess.status==='complete'&&aiDashboard) goTo('results');
-    else if(base&&base.sources&&base.sources.length>0) goTo('sources');
-    else goTo('url');
+    if(sess.status==='complete'&&aiDashboard){
+      goTo('results');
+    } else if(base&&base.sources&&base.sources.length>0){
+      goTo('sources');
+    } else {
+      goTo('url');
+    }
   }catch(e){console.error('Resume failed:',e);}
 }
 
@@ -1102,7 +1129,8 @@ async function deleteSession(id,btn){
 
 function buildWizardState(){
   var fields=document.querySelectorAll('#screen-company input');
-  var co={name:fields[0]?fields[0].value.trim():'',industry:fields[1]?fields[1].value.trim():'',region:fields[2]?fields[2].value.trim():'',size:fields[3]?fields[3].value.trim():'',growth:fields[4]?fields[4].value.trim():''};
+  var _gstEl=document.getElementById('growth-signal-text');
+  var co={name:fields[0]?fields[0].value.trim():'',industry:fields[1]?fields[1].value.trim():'',region:fields[2]?fields[2].value.trim():'',size:fields[3]?fields[3].value.trim():'',growth:fields[4]?fields[4].value.trim():'',growth_signal:_gstEl?_gstEl.textContent:''};
   var ui=document.getElementById('url-inp');
   return {
     url:ui?ui.value:'', company:co,
@@ -1200,6 +1228,13 @@ function initStratIQ(){
 }
 
 // ── THEME ────────────────────────────────────────────────────────────────────
+function goHome(){
+  currentSessionId=null;
+  aiDashboard=null;aiRoadmap=null;aiDocument=null;
+  goTo('api');
+  loadSessions();
+}
+
 function toggleTheme(){
   isDark=!isDark;
   document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
@@ -1222,6 +1257,8 @@ function goTo(n){
   if(n==='generating')startGen();
   var vb=document.getElementById('ver-badge');
   if(vb) vb.style.display=(n==='results')?'none':'flex';
+  var hb=document.getElementById('home-btn');
+  if(hb) hb.style.display=(n==='api'||n==='results')?'none':'flex';
   if(n==='results')rResults();
   window.scrollTo(0,0);
 }
@@ -1482,7 +1519,8 @@ Return ONLY a JSON object (no markdown, no preamble) in this exact structure:
     "industry": "Primary industry/sector",
     "region": "Country/region of headquarters",
     "size": "Employee count estimate or range",
-    "growth_stage": "Growth stage (e.g. Active Growth, Stable, Startup, Enterprise)"
+    "growth_stage": "Growth stage (e.g. Active Growth, Stable, Startup, Enterprise)",
+    "growth_signal": "1-2 sentences summarising the most meaningful growth or trajectory signals found — e.g. expansion plans, M&A activity, new market entries, hiring surge, fundraising, digital transformation. Be specific. If nothing meaningful found, write: No significant growth signals detected."
   },
   "sources": [
     {
@@ -1531,6 +1569,7 @@ Rules:
 - Signal IDs unique: h1-hN homepage, a1-aN about, n1-nN news, l1-lN leadership
 - Framework priority: Mandatory=regulatory requirement, Recommended=strongly applicable, Consider=relevant but not urgent
 - Max 2 Mandatory, 2 Recommended, 3 Consider frameworks
+- Geo/sector mandatory rules: UAE+healthcare → adhics MANDATORY; UAE+any personal data → uae_pdpl MANDATORY; Saudi Arabia → nca_ecc MANDATORY; EU data subjects → gdpr MANDATORY; Do NOT recommend HIPAA for UAE-only healthcare orgs — use ADHICS instead
 - Framework IDs: nca_ecc, adhics, uae_pdpl, sama_csf, nca_cscc, gdpr, nis2, dora, uk_gdpr, ncsc_caf, nist_csf, nist_80053, hipaa, pci_dss, ccpa, cmmc, asd_e8, apra_cps234, mas_trm, pdpa_sg, dpdp, rbi_cyber, iso_27001, iso_22301, itil4
 Return ONLY the JSON object. No explanation.`;
 }
@@ -1553,7 +1592,8 @@ Return ONLY a JSON object (no markdown, no preamble) in this exact structure:
     "industry": "Primary industry/sector",
     "region": "Country/region",
     "size": "Employee count estimate or range",
-    "growth_stage": "Growth stage (e.g. Active Growth, Stable, Startup, Enterprise)"
+    "growth_stage": "Growth stage (e.g. Active Growth, Stable, Startup, Enterprise)",
+    "growth_signal": "1-2 sentences summarising the most meaningful growth or trajectory signals from page content — e.g. expansion plans, M&A activity, new market entries, hiring surge, fundraising, digital transformation initiatives. Be specific. If nothing detected, write: No significant growth signals detected."
   },
   "sources": [
     {
@@ -1614,6 +1654,15 @@ Priority rules (strict):
 - "Mandatory": Regulatory requirement — non-negotiable given geography or sector
 - "Recommended": Strongly applicable given org profile — not legally mandatory but professionally essential
 - "Consider": Relevant but not urgent — explore given specific signals detected
+
+Geo/sector mandatory rules — apply these BEFORE selecting frameworks:
+- UAE + any healthcare/clinic/medical/wellness/hospital sector → adhics is MANDATORY (Abu Dhabi Healthcare Information and Cyber Security Standard applies to all healthcare data in UAE)
+- UAE + any sector → uae_pdpl is MANDATORY if the org handles personal data (almost all do)
+- Saudi Arabia + any sector → nca_ecc is MANDATORY
+- Saudi Arabia + financial → sama_csf is MANDATORY
+- EU/EEA data subjects likely → gdpr is MANDATORY
+- US healthcare data → hipaa is MANDATORY (but do NOT apply to UAE-only orgs with no US presence)
+- Do NOT recommend HIPAA for UAE healthcare orgs — use ADHICS instead
 
 Quantity rules (strict — do not pad):
 - Maximum 2 Mandatory frameworks
@@ -1716,6 +1765,8 @@ async function startScan(){
       if(fields[2]) fields[2].value=cp.region||'';
       if(fields[3]) fields[3].value=cp.size||'';
       if(fields[4]) fields[4].value=cp.growth_stage||'';
+      var _gst=document.getElementById('growth-signal-text');
+      if(_gst) _gst.textContent=cp.growth_signal||'No significant growth signals detected from this scan.';
     }
 
     // Replace SOURCES with real data
@@ -1863,174 +1914,435 @@ function restoreAll(){removedSignals.clear();rSrc();autoSave();}
 
 
 // ── INTERNAL CONTEXT ─────────────────────────────────────────────────────────
+function ctxTooltip(text){
+  return '<span class="ctx-tooltip" tabindex="0">'
+    +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;opacity:.75"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>'
+    +'<span class="ctx-tip">'+text+'</span>'
+    +'</span>';
+}
+
+function ctxAiPrefilledBanner(reason){
+  return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--accent-glow);border:1px solid rgba(0,110,204,.2);border-radius:8px">'
+    +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+    +'<div><span style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.07em">AI Pre-filled</span>'
+    +'<span style="font-size:11px;color:var(--text-dim);margin-left:6px">'+reason+'</span>'
+    +'<div style="font-size:10px;color:var(--text-muted);margin-top:3px">These are suggestions based on your scan — not confirmed facts. Untick anything that does not apply. Your input always takes priority.</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function getCoreBizSystems(){
+  var fields=document.querySelectorAll('#screen-company input');
+  var industry=(fields[1]?fields[1].value:'').toLowerCase();
+  var allSigs=SOURCES.flatMap(function(s){return s.signals.map(function(sig){return sig.text.toLowerCase();});}).join(' ');
+  var systems=[
+    {id:'email',     label:'Corporate email & messaging',     eg:'Microsoft 365, Google Workspace, Slack', reason:'standard for all organisations', always:true},
+    {id:'identity',  label:'Identity & access systems',       eg:'Azure AD / Entra, Okta — if this fails staff cannot log into anything', reason:'standard for all organisations', always:true},
+    {id:'files',     label:'File storage & collaboration',    eg:'SharePoint, OneDrive, shared drives', reason:'standard for all organisations', always:true},
+    {id:'erp',       label:'ERP / Finance system',           eg:'SAP, Oracle, Microsoft Dynamics', reason:'finance signals detected', always:true},
+    {id:'custfacing',label:'Customer-facing services / website / portal', eg:'public site, customer login, self-service', reason:'customer signals detected', always:true},
+  ];
+  var coreBiz={id:'corebiz', reason:''};
+  if(industry.includes('health')||allSigs.includes('hospital')||allSigs.includes('clinic')||allSigs.includes('patient')){
+    coreBiz.label='Core clinical system'; coreBiz.eg='Hospital HIS, EMR, pharmacy management system'; coreBiz.reason='healthcare sector detected';
+  } else if(industry.includes('financial')||industry.includes('bank')||industry.includes('insur')||industry.includes('fintech')||allSigs.includes('banking')){
+    coreBiz.label='Core banking / insurance platform'; coreBiz.eg='Temenos, Finacle, core policy system'; coreBiz.reason='financial services sector detected';
+  } else if(industry.includes('real estate')||industry.includes('property')||allSigs.includes('tenant')||allSigs.includes('real estate')){
+    coreBiz.label='CRM & property management system'; coreBiz.eg='Yardi, MRI, Salesforce'; coreBiz.reason='real estate sector detected';
+  } else if(industry.includes('logistic')||industry.includes('transport')||industry.includes('supply')||allSigs.includes('fleet')||allSigs.includes('logistics')){
+    coreBiz.label='Operations platform'; coreBiz.eg='TMS, WMS, fleet management system'; coreBiz.reason='logistics / supply chain sector detected';
+  } else if(industry.includes('education')||allSigs.includes('student')||allSigs.includes('university')){
+    coreBiz.label='Student information system'; coreBiz.eg='Banner, Blackboard, LMS'; coreBiz.reason='education sector detected';
+  } else if(industry.includes('retail')||allSigs.includes('e-commerce')||allSigs.includes('pos')){
+    coreBiz.label='POS & order management'; coreBiz.eg='Retail POS, OMS, inventory system'; coreBiz.reason='retail / e-commerce sector detected';
+  } else if(industry.includes('manufactur')||allSigs.includes('scada')||allSigs.includes('production')){
+    coreBiz.label='ERP + OT / production systems'; coreBiz.eg='MES, SCADA, production control'; coreBiz.reason='manufacturing / industrial sector detected';
+  } else if(industry.includes('holding')||industry.includes('investment')||industry.includes('group')||allSigs.includes('subsidiary')){
+    coreBiz.label='Core systems per business unit'; coreBiz.eg='varies by subsidiary — select all that apply'; coreBiz.reason='multi-sector holding structure detected';
+  } else {
+    coreBiz.label='Core business application'; coreBiz.eg='the primary system your operations depend on daily'; coreBiz.reason='';
+  }
+  systems.push(coreBiz);
+  // OT only for sectors with genuine operational technology — NOT generic healthcare/fitness
+  var showOT=industry.includes('logistic')||industry.includes('manufactur')||industry.includes('aviation')||(industry.includes('health')&&(allSigs.includes('scada')||allSigs.includes('ot ')||allSigs.includes('clinical engineering')||allSigs.includes('medical device')))||allSigs.includes('scada')||allSigs.includes('industrial');
+  if(showOT) systems.push({id:'ot', label:'OT / Industrial systems', eg:'SCADA, building management, access control hardware', reason:'operational technology signals detected'});
+  systems.push({id:'none', label:'None of the above would stop operations within hours', eg:'', reason:'', isNone:true});
+  return systems;
+}
+
+function getDataTypeOptions(){
+  var fields=document.querySelectorAll('#screen-company input');
+  var industry=(fields[1]?fields[1].value:'').toLowerCase();
+  var allSigs=SOURCES.flatMap(function(s){return s.signals.map(function(sig){return sig.text.toLowerCase();});}).join(' ');
+  var ALL=[
+    {id:'patient',    label:'Treats or manages patient health',                  eg:'clinic, hospital, pharmacy, health insurer, home care',
+     trig:function(i,s){return i.includes('health')||s.includes('hospital')||s.includes('clinic')||s.includes('patient');}, reason:'healthcare sector detected'},
+    {id:'payroll',    label:'Processes employee salary, payroll, or HR records', eg:'all organisations with employees',
+     trig:function(i,s){return true;}, reason:'all organisations with employees'},
+    {id:'payments',   label:'Takes payments from customers',                     eg:'card, bank transfer, online checkout, billing',
+     trig:function(i,s){return i.includes('retail')||i.includes('financial')||s.includes('payment')||s.includes('billing')||s.includes('e-commerce');}, reason:'payment / financial signals detected'},
+    {id:'custdata',   label:'Holds customer accounts, profiles, or transaction history', eg:'any customer-facing business',
+     trig:function(i,s){return s.includes('customer')||s.includes('client')||s.includes('portal')||i.includes('retail')||i.includes('real estate');}, reason:'customer-facing signals detected'},
+    {id:'govt',       label:'Provides services to government or handles government data', eg:'government contracts, public sector services',
+     trig:function(i,s){return s.includes('government')||s.includes('ministry')||s.includes('mou with uae government');}, reason:'government signals detected'},
+    {id:'app',        label:'Runs a consumer mobile app or website collecting user registrations', eg:'app store presence, user accounts, web sign-up',
+     trig:function(i,s){return s.includes(' app ')||s.includes('mobile app')||s.includes('digital platform')||s.includes('e-commerce');}, reason:'digital / app signals detected'},
+    {id:'students',   label:'Manages student, trainee, or education records',    eg:'schools, universities, training providers',
+     trig:function(i,s){return i.includes('education')||s.includes('student')||s.includes('university');}, reason:'education sector detected'},
+    {id:'financial',  label:'Operates in financial services',                    eg:'lending, insurance, investment, remittance, fintech',
+     trig:function(i,s){return i.includes('financial')||i.includes('bank')||i.includes('insur')||i.includes('fintech');}, reason:'financial services sector detected'},
+    {id:'realestate', label:'Manages real estate tenant, owner, or lease records', eg:'property management, lease agreements',
+     trig:function(i,s){return i.includes('real estate')||i.includes('property')||s.includes('tenant')||s.includes('real estate');}, reason:'real estate sector detected'},
+    {id:'logistics',  label:'Handles logistics, supply chain, or fleet / driver data', eg:'tracking systems, manifests, driver records',
+     trig:function(i,s){return i.includes('logistic')||i.includes('transport')||s.includes('fleet')||s.includes('logistics')||s.includes('supply chain');}, reason:'logistics / supply chain signals detected'},
+    {id:'biometric',  label:'Processes biometric data',                          eg:'fingerprint access control, facial recognition, iris scan',
+     trig:function(i,s){return s.includes('biometric')||s.includes('access control')||s.includes('fingerprint');}, reason:'biometric / access control signals detected'},
+    {id:'crossborder',label:'Manages staff from multiple nationalities',          eg:'cross-border HR, visa records, international payroll',
+     trig:function(i,s){return s.includes('multinational')||s.includes('multi-national')||s.includes('diverse workforce')||s.includes('gcc')||s.includes('regional');}, reason:'multi-national workforce signals detected'},
+    {id:'none',       label:'None of the above applies clearly', eg:'', trig:function(){return false;}, reason:'', isNone:true},
+  ];
+  return ALL.map(function(opt){
+    return Object.assign({},opt,{suggested:opt.isNone?false:opt.trig(industry,allSigs)});
+  });
+}
+
+function checkItem(id,label,eg,checked,aiSuggested,suggReason,dimmed,onchange){
+  var border=checked?'var(--accent)':'var(--border)';
+  var bg=checked?'var(--accent-glow)':'var(--surface2)';
+  var opacity=dimmed?'0.55':'1';
+  var sugTagChecked=aiSuggested&&checked?'<span class="ai-sug-tag"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>AI suggested \xb7 '+suggReason+'</span>':'';
+  var sugTagUnchecked=aiSuggested&&!checked?'<span class="ai-sug-tag"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>AI suggested \xb7 '+suggReason+'</span>':'';
+  return '<div onclick="'+onchange+'" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:9px;border:1px solid '+border+';background:'+bg+';cursor:pointer;transition:all .15s;user-select:none;opacity:'+opacity+'">'
+    +'<div style="width:18px;height:18px;border-radius:5px;border:2px solid '+(checked?'var(--accent)':'var(--border)')+';background:'+(checked?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s">'
+    +(checked?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')+'</div>'
+    +'<div style="flex:1">'
+    +'<div style="font-size:13px;font-weight:600;color:'+(checked?'var(--accent)':dimmed?'var(--text-muted)':'var(--text-dim)')+'">'+label+sugTagChecked+'</div>'
+    +(eg?'<div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-style:italic">e.g. '+eg+'</div>':'')
+    +(!checked&&aiSuggested?'<div style="margin-top:4px">'+sugTagUnchecked+'</div>':'')
+    +'</div>'
+    +'</div>';
+}
+
+function noneItem(id,label,checked,onchange){
+  return '<div onclick="'+onchange+'" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;border:1px solid '+(checked?'var(--accent)':'var(--border)')+';background:'+(checked?'var(--accent-glow)':'transparent')+';cursor:pointer;user-select:none;margin-top:4px">'
+    +'<div style="width:18px;height:18px;border-radius:50%;border:2px solid '+(checked?'var(--accent)':'var(--border)')+';background:'+(checked?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+    +(checked?'<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')+'</div>'
+    +'<span style="font-size:13px;color:var(--text-dim)">'+label+'</span>'
+    +'</div>';
+}
+
 function rContext(){
   var ic=internalContext;
-  // Pre-populate business risks from aiDashboard if available
   var aiRisks=[];
   if(aiDashboard&&aiDashboard.risks) aiRisks=aiDashboard.risks.map(function(r){return r.name;});
   var exampleRisks=['Operational disruption','Data breach / customer data loss','Regulatory non-compliance','Reputational damage','Supply chain compromise','Ransomware / business interruption','Fraud / financial crime','Third-party risk exposure'];
   var allRiskOptions=aiRisks.length?aiRisks:exampleRisks;
   var selRisks=ic.topRisks||[];
 
+  function card(title,icon,tooltip,content){
+    var ttHtml=tooltip?(' '+ctxTooltip(tooltip)):'';
+    return '<div class="card" style="padding:20px">'
+      +'<div class="sec-title" style="margin-bottom:14px;display:flex;align-items:center;gap:6px">'+icon+'<span>'+title+'</span>'+ttHtml+'</div>'
+      +content+'</div>';
+  }
+
+  function radioGrid(name,opts,cur,onchange){
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+opts.map(function(o){
+      var val=typeof o==='object'?o.val:o; var lbl=typeof o==='object'?o.lbl:o; var on=cur===val;
+      return '<label style="display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:8px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;font-size:13px;color:'+(on?'var(--accent)':'var(--text-dim)')+';transition:all .15s">'
+        +'<input type="radio" name="'+name+'" value="'+val+'" '+(on?'checked':'')+' style="accent-color:var(--accent)" onchange="'+onchange+'"> '+lbl+'</label>';
+    }).join('')+'</div>';
+  }
+
   function radio(name,opts,cur,onchange){
     return '<div style="display:flex;flex-wrap:wrap;gap:8px">'+opts.map(function(o){
-      var val=typeof o==='object'?o.val:o;
-      var lbl=typeof o==='object'?o.lbl:o;
-      var on=cur===val;
+      var val=typeof o==='object'?o.val:o; var lbl=typeof o==='object'?o.lbl:o; var on=cur===val;
       return '<label style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;font-size:13px;color:'+(on?'var(--accent)':'var(--text-dim)')+';transition:all .15s">'
         +'<input type="radio" name="'+name+'" value="'+val+'" '+(on?'checked':'')+' style="accent-color:var(--accent)" onchange="'+onchange+'"> '+lbl+'</label>';
     }).join('')+'</div>';
   }
 
-  function card(title,icon,content){
-    return '<div class="card" style="padding:20px">'
-      +'<div class="sec-title" style="margin-bottom:14px">'+icon+title+'</div>'
-      +content
-      +'</div>';
-  }
-
   var h='';
 
-  // Q1 — Budget
-  h+=card('Annual IT & Security Budget','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h6a2 2 0 010 4H8"/></svg>',
+  // Section header note
+  h+='<div style="margin-bottom:6px;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;display:flex;gap:10px;align-items:flex-start">'
+    +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>'
+    +'<p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.6">Questions with a blue info icon have tooltips — hover or tap for guidance. All answers stay on your machine only.</p>'
+    +'</div>';
+
+  // Q1 Budget
+  h+=card('Annual IT & Security Budget',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h6a2 2 0 010 4H8"/></svg>',
+    'Include all spending on IT infrastructure, software licences, security tools, and any managed services (MSSP, SOC). If no dedicated security budget exists, estimate the security portion of the IT budget. Figures in USD as reference currency.',
     radio('ctx-budget',[
-      {val:'<$100K',lbl:'Under $100K'},{val:'$100K-$500K',lbl:'$100K – $500K'},
-      {val:'$500K-$2M',lbl:'$500K – $2M'},{val:'$2M-$10M',lbl:'$2M – $10M'},
+      {val:'<$100K',lbl:'Under $100K'},{val:'$100K-$500K',lbl:'$100K - $500K'},
+      {val:'$500K-$2M',lbl:'$500K - $2M'},{val:'$2M-$10M',lbl:'$2M - $10M'},
       {val:'$10M+',lbl:'$10M+'},{val:'Not disclosed',lbl:'Prefer not to say'}
-    ],ic.budget||'','internalContext.budget=this.value;autoSave()')
-  );
+    ],ic.budget||'','internalContext.budget=this.value;autoSave()'));
 
-  // Q2 — Headcount
-  h+=card('Organisation Headcount','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+  // Q2 Headcount
+  h+=card('Organisation Headcount',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+    'Total employees across all business units, subsidiaries, and locations. Include full-time, part-time, and long-term contractors. Used to estimate organisation scale and size security initiatives appropriately.',
     radio('ctx-head',[
-      {val:'<50',lbl:'Under 50'},{val:'50-250',lbl:'50 – 250'},
-      {val:'250-1000',lbl:'250 – 1,000'},{val:'1000-5000',lbl:'1,000 – 5,000'},{val:'5000+',lbl:'5,000+'}
-    ],ic.headcount||'','internalContext.headcount=this.value;autoSave()')
-  );
+      {val:'<50',lbl:'Under 50'},{val:'50-250',lbl:'50 - 250'},
+      {val:'250-1000',lbl:'250 - 1,000'},{val:'1000-5000',lbl:'1,000 - 5,000'},{val:'5000+',lbl:'5,000+'}
+    ],ic.headcount||'','internalContext.headcount=this.value;autoSave()'));
 
-  // Q3 — IT team size
-  h+=card('IT Team Size','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  // Q3 IT Team
+  h+=card('IT Team Size',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    'Count only people whose primary job is IT: infrastructure, helpdesk, systems administration, development, or security. Do not include business users with IT-adjacent skills. If IT is fully outsourced, select Outsourced / MSP.',
     radio('ctx-it',[
-      {val:'1-2 people',lbl:'1–2 people'},{val:'3-10 people',lbl:'3–10 people'},
-      {val:'11-30 people',lbl:'11–30 people'},{val:'30+ people',lbl:'30+ people'},{val:'Outsourced',lbl:'Outsourced / MSP'}
-    ],ic.itTeamSize||'','internalContext.itTeamSize=this.value;autoSave()')
-  );
+      {val:'1-2 people',lbl:'1-2 people'},{val:'3-10 people',lbl:'3-10 people'},
+      {val:'11-30 people',lbl:'11-30 people'},{val:'30+ people',lbl:'30+ people'},{val:'Outsourced',lbl:'Outsourced / MSP'}
+    ],ic.itTeamSize||'','internalContext.itTeamSize=this.value;autoSave()'));
 
-  // Q4+Q5 — Security team + CISO role (side by side)
+  // Q4+Q5 Security team + CISO
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="g2">';
-  h+=card('Dedicated Security Team?','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-    radio('ctx-secteam',[{val:'yes',lbl:'Yes'},{val:'no',lbl:'No — security is shared IT responsibility'}],
+  h+=card('Dedicated Security Team?',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    'A dedicated security team means people whose primary job is cybersecurity, not IT staff who also handle security as part of a broader role. Even one full-time security person counts.',
+    radio('ctx-secteam',[{val:'yes',lbl:'Yes'},{val:'no',lbl:'No - security is shared IT responsibility'}],
       ic.secTeam===true?'yes':ic.secTeam===false?'no':'',
-      'internalContext.secTeam=this.value==="yes";autoSave()')
-  );
-  h+=card('CISO / Security Lead Role Exists?','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+      'internalContext.secTeam=this.value==="yes";autoSave()'));
+  h+=card('CISO / Security Lead Exists?',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+    'This person is accountable for cybersecurity strategy and risk, even if their title is Head of IT Security or IT Director rather than CISO. The title field helps StratIQ use the correct role name in generated documents.',
     radio('ctx-ciso',[{val:'yes',lbl:'Yes'},{val:'no',lbl:'No'}],
       ic.cisoExists===true?'yes':ic.cisoExists===false?'no':'',
       'internalContext.cisoExists=this.value==="yes";document.getElementById("ctx-ciso-title-wrap").style.display=this.value==="yes"?"block":"none";autoSave()')
     +'<div id="ctx-ciso-title-wrap" style="margin-top:10px;display:'+(ic.cisoExists?'block':'none')+'">'
     +'<span class="label" style="margin-bottom:6px">Title</span>'
     +'<input type="text" placeholder="e.g. CISO, Head of Cybersecurity, IT Security Manager..." value="'+(ic.cisoTitle||'')+'" style="font-size:13px" onblur="internalContext.cisoTitle=this.value;autoSave()">'
-    +'</div>'
-  );
+    +'</div>');
   h+='</div>';
 
-  // Q6 — Last incident
-  h+=card('Last Significant Security Incident','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" style="margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
-    radio('ctx-incident',[
-      {val:'Within 6 months',lbl:'Within 6 months'},
-      {val:'Within past year',lbl:'Within past year'},
-      {val:'1-2 years ago',lbl:'1–2 years ago'},
-      {val:'No known incidents',lbl:'No known incidents'},
-      {val:'Prefer not to say',lbl:'Prefer not to say'}
-    ],ic.lastIncident||'','internalContext.lastIncident=this.value;autoSave()')
-  );
+  // Q6 Critical Systems
+  var bizSystems=getCoreBizSystems();
+  var selSystems=Array.isArray(ic.criticalSystems)?ic.criticalSystems:[];
+  var suggestedSystems=bizSystems.filter(function(s){return s.reason&&!s.isNone;}).map(function(s){return s.id;});
+  h+=card('Which Systems Would Stop Operations Within Hours If Unavailable?',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    'Select systems that, if unavailable, would prevent staff from doing their jobs within hours. Cloud-hosted systems are generally resilient, but a corporate internet outage or identity provider failure can make them inaccessible even when the cloud service itself is healthy. Used to estimate operational downtime costs in the risk quantification.',
+    (suggestedSystems.length?ctxAiPrefilledBanner('based on your company profile and scan signals'):'')
+    +'<div style="display:flex;flex-direction:column;gap:8px" id="ctx-systems-list">'
+    +bizSystems.map(function(sys){
+      var checked=selSystems.indexOf(sys.id)!==-1;
+      var isSug=suggestedSystems.indexOf(sys.id)!==-1&&!sys.isNone;
+      if(sys.isNone) return noneItem(sys.id,sys.label,checked,"ctxToggleSystem('none')");
+      return checkItem(sys.id,sys.label,sys.eg,checked,isSug,sys.reason,false,"ctxToggleSystem('"+sys.id+"')");
+    }).join('')+'</div>');
 
-  // Q7 — Board attitude
-  h+=card('Board Attitude to Cyber Risk','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3H8L2 7h20l-6-4z"/></svg>',
+  // Q7 Data Types
+  var dataOpts=getDataTypeOptions();
+  var selDataTypes=Array.isArray(ic.dataTypes)?ic.dataTypes:[];
+  var suggestedData=dataOpts.filter(function(d){return d.suggested;}).map(function(d){return d.id;});
+  var primaryData=dataOpts.filter(function(d){return d.suggested||selDataTypes.indexOf(d.id)!==-1||d.isNone;});
+  var secondaryData=dataOpts.filter(function(d){return !d.suggested&&selDataTypes.indexOf(d.id)===-1&&!d.isNone;});
+  h+=card("What Does Your Organisation Do With People's Information?",
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    "You do not need a formal data classification to answer this. Think about what colleagues in HR, Finance, Operations, and Sales do day-to-day. This drives regulatory framework applicability and breach cost estimates in Section 10.",
+    (suggestedData.length?ctxAiPrefilledBanner('based on your industry and intelligence scan signals'):'')
+    +'<p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Select all that apply. Used to calculate regulatory exposure and breach impact.</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px" id="ctx-datatypes-list">'
+    +primaryData.map(function(opt){
+      if(opt.isNone){var ch=selDataTypes.indexOf('none')!==-1;return noneItem('none',opt.label,ch,"ctxToggleDataType('none')");}
+      var ch=selDataTypes.indexOf(opt.id)!==-1;
+      return checkItem(opt.id,opt.label,opt.eg,ch,opt.suggested,opt.reason,false,"ctxToggleDataType('"+opt.id+"')");
+    }).join('')
+    +(secondaryData.length
+      ?'<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">'
+       +'<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Less likely for your sector - tick if they apply:</div>'
+       +'<div style="display:flex;flex-direction:column;gap:6px">'
+       +secondaryData.map(function(opt){
+         var ch=selDataTypes.indexOf(opt.id)!==-1;
+         return checkItem(opt.id,opt.label,opt.eg,ch,false,'',true,"ctxToggleDataType('"+opt.id+"')");
+       }).join('')+'</div></div>'
+      :'')
+    +'</div>');
+
+  // Q8 Record Volume
+  h+=card('Roughly How Many Records Does the Organisation Hold?',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+    'Count records across all systems: customer accounts, patient files, employee HR records, tenant profiles, student enrolments. If unsure, select Use assumptions and StratIQ will estimate based on your sector and size, stating the assumption clearly in the output document.',
+    '<p style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Used to estimate data breach financial impact. If unknown, a conservative sector-based estimate will be used and stated explicitly in Section 10.</p>'
+    +radio('ctx-records',[
+      {val:'assume',    lbl:'Use assumptions - estimate based on my org profile (default)'},
+      {val:'under-10k', lbl:'Under 10,000'},
+      {val:'10k-100k',  lbl:'10,000 - 100,000'},
+      {val:'100k-1m',   lbl:'100,000 - 1,000,000'},
+      {val:'over-1m',   lbl:'Over 1,000,000'}
+    ],ic.recordVolume||'assume','internalContext.recordVolume=this.value;autoSave()')
+    +'<div style="margin-top:10px;padding:9px 12px;background:rgba(0,110,204,.05);border:1px solid rgba(0,110,204,.15);border-radius:7px;font-size:11px;color:var(--text-dim);display:flex;gap:8px;align-items:flex-start">'
+    +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+    +'When using assumptions, Section 10 will show the estimated figure and its derivation method so the board can see the basis for financial estimates.</div>');
+
+  // Q9 Security Incidents
+  h+=card('Security Incidents in the Last 3 Years',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+    'A security incident means a confirmed or suspected attack: ransomware, malware, phishing that succeeded, unauthorised access, or data leaving the organisation without authorisation. This is different from a general IT outage caused by hardware failure. Past incidents are the strongest predictor of future frequency in FAIR risk modelling.',
+    radioGrid('ctx-incident',[
+      {val:'Ransomware or malware disrupted operations',lbl:'Yes — ransomware or malware disrupted operations'},
+      {val:'Data breach - confirmed unauthorised access',lbl:'Yes — confirmed data breach or unauthorised access'},
+      {val:'Suspected incident not fully investigated',lbl:'Yes — suspected incident, not fully investigated'},
+      {val:'No known security incidents',lbl:'No known security incidents in 3 years'},
+      {val:'Unknown',lbl:'Unknown / I was not in the role'}
+    ],ic.lastIncident||'','internalContext.lastIncident=this.value;autoSave()'));
+
+  // Q10 IT Outages
+  h+=card('Unplanned IT Outages Lasting 4+ Hours (Last 3 Years)',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    'An unplanned outage means systems went down unexpectedly - not scheduled maintenance. The 4-hour threshold is used because shorter outages rarely have material business impact. Include outages from ISP failures, cloud provider incidents, hardware failures, or configuration errors. Security incidents are covered in the question above.',
+    radioGrid('ctx-outage',[
+      {val:'Yes - infrastructure or hardware failure',lbl:'Yes — hardware or infrastructure failure'},
+      {val:'Yes - software or configuration error',lbl:'Yes — software or configuration error'},
+      {val:'Yes - third-party or cloud provider outage',lbl:'Yes — third-party or cloud provider outage'},
+      {val:'No significant outages',lbl:'No significant outages in 3 years'},
+      {val:'Unknown',lbl:'Unknown'}
+    ],ic.itOutage||'','internalContext.itOutage=this.value;autoSave()'));
+
+  // Q11 Board Attitude
+  h+=card('Board Attitude to Cyber Risk',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3H8L2 7h20l-6-4z"/></svg>',
+    'This shapes the framing and tone of the strategy document. A board that actively champions security gets a strategy that expands the program. A passive board gets a strategy that builds the business case first. Answer honestly.',
     radio('ctx-board',[
-      {val:'Active champion',lbl:'Active champion — board drives security agenda'},
-      {val:'Aware but passive',lbl:'Aware but passive — supportive when asked'},
-      {val:'Minimal interest',lbl:'Minimal interest — sees it as IT\'s problem'},
+      {val:'Active champion',lbl:'Active champion - board drives security agenda'},
+      {val:'Aware but passive',lbl:'Aware but passive - supportive when asked'},
+      {val:'Minimal interest',lbl:"Minimal interest - sees it as IT's problem"},
       {val:'Unknown',lbl:'Unknown / hard to gauge'}
-    ],ic.boardAttitude||'','internalContext.boardAttitude=this.value;autoSave()')
-  );
+    ],ic.boardAttitude||'','internalContext.boardAttitude=this.value;autoSave()'));
 
-  // Q8 — Top 3 business risks (chips — AI pre-filled + custom)
+  // Q12 Top Business Risks
   var riskChips=allRiskOptions.map(function(r){
     var on=selRisks.indexOf(r)!==-1;
-    return '<div onclick="ctxToggleRisk(\''+r.replace(/'/g,"\\'")+'\')" style="padding:8px 14px;border-radius:8px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;font-size:13px;color:'+(on?'var(--accent)':'var(--text-dim)')+';transition:all .15s;user-select:none">'
+    return '<div onclick="ctxToggleRisk(\''+r.replace(/'/g,"\\'")+'\')\" style="padding:8px 14px;border-radius:8px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;font-size:13px;color:'+(on?'var(--accent)':'var(--text-dim)')+';transition:all .15s;user-select:none">'
       +(on?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" style="margin-right:5px"><path d="M20 6L9 17l-5-5"/></svg>':'')+r+'</div>';
   }).join('');
-  h+=card('Top Business Risks'+(aiRisks.length?' <span style="font-size:9px;color:var(--accent);font-weight:700;margin-left:6px">AI PRE-FILLED</span>':''),'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" style="margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
-    '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Select the risks most material to your business. Add others not listed.</p>'
+  h+=card('Top Business Risks'+(aiRisks.length?' <span style="font-size:9px;color:var(--accent);font-weight:700;margin-left:6px">AI PRE-FILLED</span>':''),
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+    'Select the business risks that matter most to your leadership - not technical risks. "Data breach" is a business risk. "Unpatched CVE" is not. These frame the strategy in language your board understands and prioritise roadmap sequencing. Add risks specific to your organisation not listed here.',
+    (aiRisks.length?ctxAiPrefilledBanner('business risks derived from your intelligence scan dashboard'):'')
+    +'<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Select risks most material to your business. Add others not listed.</p>'
     +'<div id="ctx-risk-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">'+riskChips+'</div>'
-    +'<div style="display:flex;gap:8px"><input id="ctx-risk-custom" type="text" placeholder="Add custom risk..." style="flex:1;font-size:13px" onkeydown="if(event.key===\'Enter\')ctxAddRisk()"><button onclick="ctxAddRisk()" class="btn-ghost" style="border-color:var(--accent);color:var(--accent);white-space:nowrap;padding:8px 14px">+ Add</button></div>'
-  );
+    +'<div style="display:flex;gap:8px"><input id="ctx-risk-custom" type="text" placeholder="Add custom risk..." style="flex:1;font-size:13px" onkeydown="if(event.key===\'Enter\')ctxAddRisk()"><button onclick="ctxAddRisk()" class="btn-ghost" style="border-color:var(--accent);color:var(--accent);white-space:nowrap;padding:8px 14px">+ Add</button></div>');
 
-  // Q9 — Constraint (multi-select — user may have more than one)
+  // Q13 Constraints
   var constraintOpts=['Budget','People / skills','Executive buy-in'];
   var selConstraints=Array.isArray(ic.constraints)?ic.constraints:(ic.constraint?[ic.constraint]:[]);
   var constraintBoxes=constraintOpts.map(function(opt){
     var on=selConstraints.indexOf(opt)!==-1;
     return '<div onclick="ctxToggleConstraint(\''+opt+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent-glow)':'var(--surface2)')+';cursor:pointer;transition:all .15s;user-select:none;flex:1">'
       +'<div style="width:18px;height:18px;border-radius:5px;border:2px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">'
-      +(on?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')
-      +'</div>'
+      +(on?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>':'')+'</div>'
       +'<span style="font-size:13px;font-weight:600;color:'+(on?'var(--accent)':'var(--text-dim)')+'">'+opt+'</span>'
       +'</div>';
   }).join('');
-  h+=card('Biggest Constraints','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5" style="margin-right:6px"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+  h+=card('Biggest Constraints',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+    'Select constraints that most limit your security program. Budget means funding is the primary blocker. People/skills means you lack trained staff. Executive buy-in means security is not yet a business priority. StratIQ sequences roadmap initiatives accordingly - showing low-cost high-impact wins first when budget is constrained.',
     '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Select all that apply.</p>'
-    +'<div id="ctx-constraint-boxes" style="display:flex;gap:10px;flex-wrap:wrap">'+constraintBoxes+'</div>'
-  );
+    +'<div id="ctx-constraint-boxes" style="display:flex;gap:10px;flex-wrap:wrap">'+constraintBoxes+'</div>');
 
-  // Q10 — Compliance deadline
-  h+=card('Compliance Deadline Pressure','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  // Q14 Compliance Deadline
+  h+=card('Compliance Deadline Pressure',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    'A compliance deadline means a regulatory authority, auditor, or contractual obligation requires you to achieve a specific compliance standard by a specific date. Examples: NCA ECC assessment scheduled, ISO 27001 certification required for a contract, ADHICS audit due. This forces Phase 1 of the roadmap to prioritise compliance gaps.',
     radio('ctx-compliance',[
-      {val:'Yes — within 12 months',lbl:'Yes — within 12 months'},
-      {val:'Yes — within 2 years',lbl:'Yes — within 2 years'},
+      {val:'Yes - within 12 months',lbl:'Yes - within 12 months'},
+      {val:'Yes - within 2 years',lbl:'Yes - within 2 years'},
       {val:'No immediate deadline',lbl:'No immediate deadline'},
       {val:'Unknown',lbl:'Unknown'}
-    ],ic.complianceDeadline||'','internalContext.complianceDeadline=this.value;autoSave()')
-  );
+    ],ic.complianceDeadline||'','internalContext.complianceDeadline=this.value;autoSave()'));
 
-  // Q11 — Cloud stage
-  h+=card('Cloud Adoption Stage','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>',
+  // Q15 Cloud Stage
+  h+=card('Cloud Adoption Stage',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>',
+    'All-cloud means most systems are SaaS or hosted in public cloud (AWS, Azure, GCP). Hybrid means a mix of cloud and on-premises servers. Mostly on-premises means servers and applications are primarily in your own data centre or server room. This determines which security controls are most relevant.',
     radio('ctx-cloud',[
       {val:'All-cloud / cloud-native',lbl:'All-cloud / cloud-native'},
       {val:'Hybrid (cloud + on-prem)',lbl:'Hybrid (cloud + on-prem)'},
       {val:'Mostly on-premises',lbl:'Mostly on-premises'},
       {val:'Unknown',lbl:'Unknown / early assessment'}
-    ],ic.cloudStage||'','internalContext.cloudStage=this.value;autoSave()')
-  );
+    ],ic.cloudStage||'','internalContext.cloudStage=this.value;autoSave()'));
 
-  // Q12 — Remote/hybrid workforce
-  h+=card('Remote / Hybrid Workforce','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+  // Q16 Remote Work
+  h+=card('Remote / Hybrid Workforce',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+    'A remote or hybrid workforce changes the security perimeter. Staff accessing corporate systems from home networks or personal devices increases endpoint and identity risk. This affects which controls are prioritised in the roadmap.',
     radio('ctx-remote',[
       {val:'Fully on-site',lbl:'Fully on-site'},{val:'Mostly on-site (<25% remote)',lbl:'Mostly on-site'},
-      {val:'Hybrid (25-75% remote)',lbl:'Hybrid (25–75% remote)'},{val:'Mostly remote (75%+)',lbl:'Mostly remote (75%+)'}
-    ],ic.remoteWork||'','internalContext.remoteWork=this.value;autoSave()')
-  );
+      {val:'Hybrid (25-75% remote)',lbl:'Hybrid (25-75% remote)'},{val:'Mostly remote (75%+)',lbl:'Mostly remote (75%+)'}
+    ],ic.remoteWork||'','internalContext.remoteWork=this.value;autoSave()'));
 
-  // Q13 — Vendor/third-party risk
-  h+=card('Third-Party / Vendor Risk Exposure','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+  // Q17 Vendor Risk
+  h+=card('Third-Party / Vendor Risk Exposure',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+    'Third-party risk means vendors, suppliers, MSPs, or partners who have access to your systems or data. High exposure means a vendor compromise could stop your operations - for example if your cloud provider, ERP vendor, or MSSP were breached. Drives supply chain security initiatives in the roadmap.',
     radio('ctx-vendor',[
-      {val:'High (critical ops depend on vendors)',lbl:'High — critical operations depend on vendors'},
-      {val:'Medium (some outsourcing)',lbl:'Medium — some outsourcing'},
-      {val:'Low (mostly in-house)',lbl:'Low — mostly in-house'},
+      {val:'High (critical ops depend on vendors)',lbl:'High - critical operations depend on vendors'},
+      {val:'Medium (some outsourcing)',lbl:'Medium - some outsourcing'},
+      {val:'Low (mostly in-house)',lbl:'Low - mostly in-house'},
       {val:'Unknown',lbl:'Unknown / not assessed'}
-    ],ic.vendorRisk||'','internalContext.vendorRisk=this.value;autoSave()')
-  );
+    ],ic.vendorRisk||'','internalContext.vendorRisk=this.value;autoSave()'));
 
-  // Q14 — Board notes (free text)
-  h+=card('Anything the Board Needs to Know?','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-right:6px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>',
+  // Q18 Board Notes
+  h+=card('Anything the Board Needs to Know?',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>',
+    'Use this for context that does not fit the structured questions - political realities, recent decisions, upcoming events. Examples: Board approved a 3-year digital transformation program, CEO wants a security briefing before the AGM, we are mid-way through an ERP migration. This is injected directly into AI prompts as authoritative context.',
     '<textarea rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;line-height:1.5;transition:border-color .2s" '
     +'placeholder="e.g. Board approved a 3-year digital transformation program. CEO is supportive of security investment if framed as risk reduction..." '
-    +'onfocus="this.style.borderColor=\'var(--border2)\'" onblur="this.style.borderColor=\'var(--border)\';internalContext.boardNotes=this.value;autoSave()">'+(ic.boardNotes||'')+'</textarea>'
-  );
+    +'onfocus="this.style.borderColor=\'var(--border2)\'" onblur="this.style.borderColor=\'var(--border)\';internalContext.boardNotes=this.value;autoSave()">'+(ic.boardNotes||'')+'</textarea>');
 
   document.getElementById('ctx-form').innerHTML=h;
 }
+
+function ctxToggleSystem(id){
+  if(!Array.isArray(internalContext.criticalSystems)) internalContext.criticalSystems=[];
+  var idx=internalContext.criticalSystems.indexOf(id);
+  if(idx===-1) internalContext.criticalSystems.push(id);
+  else internalContext.criticalSystems.splice(idx,1);
+  autoSave();
+  var bizSystems=getCoreBizSystems();
+  var selSystems=internalContext.criticalSystems;
+  var suggestedSystems=bizSystems.filter(function(s){return s.reason&&!s.isNone;}).map(function(s){return s.id;});
+  var container=document.getElementById('ctx-systems-list');
+  if(container) container.innerHTML=bizSystems.map(function(sys){
+    var checked=selSystems.indexOf(sys.id)!==-1;
+    var isSug=suggestedSystems.indexOf(sys.id)!==-1&&!sys.isNone;
+    if(sys.isNone) return noneItem(sys.id,sys.label,checked,"ctxToggleSystem('none')");
+    return checkItem(sys.id,sys.label,sys.eg,checked,isSug,sys.reason,false,"ctxToggleSystem('"+sys.id+"')");
+  }).join('');
+}
+
+function ctxToggleDataType(id){
+  if(!Array.isArray(internalContext.dataTypes)) internalContext.dataTypes=[];
+  var idx=internalContext.dataTypes.indexOf(id);
+  if(idx===-1) internalContext.dataTypes.push(id);
+  else internalContext.dataTypes.splice(idx,1);
+  autoSave();
+  var dataOpts=getDataTypeOptions();
+  var selDataTypes=internalContext.dataTypes;
+  var primaryData=dataOpts.filter(function(d){return d.suggested||selDataTypes.indexOf(d.id)!==-1||d.isNone;});
+  var secondaryData=dataOpts.filter(function(d){return !d.suggested&&selDataTypes.indexOf(d.id)===-1&&!d.isNone;});
+  var container=document.getElementById('ctx-datatypes-list');
+  if(container) container.innerHTML=primaryData.map(function(opt){
+    if(opt.isNone){var ch=selDataTypes.indexOf('none')!==-1;return noneItem('none',opt.label,ch,"ctxToggleDataType('none')");}
+    var ch=selDataTypes.indexOf(opt.id)!==-1;
+    return checkItem(opt.id,opt.label,opt.eg,ch,opt.suggested,opt.reason,false,"ctxToggleDataType('"+opt.id+"')");
+  }).join('')
+  +(secondaryData.length
+    ?'<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">'
+     +'<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Less likely for your sector - tick if they apply:</div>'
+     +'<div style="display:flex;flex-direction:column;gap:6px">'
+     +secondaryData.map(function(opt){
+       var ch=selDataTypes.indexOf(opt.id)!==-1;
+       return checkItem(opt.id,opt.label,opt.eg,ch,false,'',true,"ctxToggleDataType('"+opt.id+"')");
+     }).join('')+'</div></div>'
+    :'');
+}
+
+
 
 function ctxToggleRisk(r){
   if(!internalContext.topRisks) internalContext.topRisks=[];
@@ -2124,8 +2436,9 @@ function rFw(){
       var sel=selFw.has(fw.id);
       var lib=FW_LIBRARY[fw.id]||{};
       var color=fw.color||lib.color||'#5577CC';
-      html+='<div onclick="tFw(\''+fw.id+'\')" style="display:flex;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid '+(sel?color+'44':isConsider?'var(--border)':tm.border)+';background:'+(sel?color+'0C':isConsider?'var(--surface2)':tm.bg)+';cursor:pointer;transition:all .2s;margin-bottom:8px;opacity:'+(isConsider&&!sel?'0.85':'1')+'">'
-            +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(sel?color:'var(--border)')+';background:'+(sel?color:'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px;transition:all .2s">'+(sel?chk():'')+'</div>'
+      var isMand=(tier==='Mandatory');
+      html+='<div onclick="tFw(\''+fw.id+'\')" style="display:flex;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid '+(sel?color+'44':isConsider?'var(--border)':tm.border)+';background:'+(sel?color+'0C':isConsider?'var(--surface2)':tm.bg)+';cursor:pointer;;transition:all .2s;margin-bottom:8px;opacity:'+(isConsider&&!sel?'0.85':'1')+'">'
+            +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(isMand?color:sel?color:'var(--border)')+';background:'+(sel?color:'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px;transition:all .2s">'+(sel?chk():'')+'</div>'
             +'<div style="flex:1">'
             +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap">'
             +'<span style="font-size:15px;font-weight:800">'+fw.name+'</span>'
@@ -2151,7 +2464,10 @@ function rFw(){
   document.getElementById('fw-cnt').textContent=selFw.size;
   fwBuildDropdown();
 }
-function tFw(id){selFw.has(id)?selFw.delete(id):selFw.add(id);rFw();autoSave();}
+function tFw(id){
+  var fw=aiFrameworks.find(function(f){return f.id===id;});
+  selFw.has(id)?selFw.delete(id):selFw.add(id);rFw();autoSave();
+}
 
 function fwAddFromDropdown(){
   var sel=document.getElementById('fw-add-sel');
@@ -2260,10 +2576,10 @@ function buildCtxBlock(ic){
   if(ic.itTeamSize)   lines.push('IT team size: '+ic.itTeamSize);
   if(ic.secTeam!==undefined) lines.push('Dedicated security team: '+(ic.secTeam?'Yes':'No'));
   if(ic.cisoExists!==undefined) lines.push('CISO / security lead exists: '+(ic.cisoExists?(ic.cisoTitle||'Yes'):'No'));
-  if(ic.lastIncident) lines.push('Last significant security incident: '+ic.lastIncident);
+  if(ic.lastIncident) lines.push('Last security incident: '+ic.lastIncident);
+  if(ic.itOutage)     lines.push('IT availability outages (last 3 years): '+ic.itOutage);
   if(ic.boardAttitude) lines.push('Board attitude to cyber risk: '+ic.boardAttitude);
   if(ic.topRisks&&ic.topRisks.length) lines.push('Top business risks identified by practitioner: '+ic.topRisks.join(', '));
-  // Support both array (new) and string (legacy) for constraints
   var constraints=Array.isArray(ic.constraints)&&ic.constraints.length?ic.constraints.join(', '):ic.constraint||'';
   if(constraints) lines.push('Biggest constraints: '+constraints+' — sequence roadmap to address these first');
   if(ic.complianceDeadline) lines.push('Compliance deadline pressure: '+ic.complianceDeadline);
@@ -2271,15 +2587,18 @@ function buildCtxBlock(ic){
   if(ic.remoteWork)   lines.push('Remote/hybrid workforce: '+ic.remoteWork);
   if(ic.vendorRisk)   lines.push('Third-party/vendor risk exposure: '+ic.vendorRisk);
   if(ic.boardNotes)   lines.push('Additional board context: '+ic.boardNotes);
-  // Add wishlist items so AI knows what capabilities are being evaluated
+  if(ic.criticalSystems&&ic.criticalSystems.length)
+    lines.push('Critical systems (stop operations within hours if down): '+ic.criticalSystems.join(', '));
+  if(ic.dataTypes&&ic.dataTypes.length)
+    lines.push('Data types held: '+ic.dataTypes.join(', '));
+  if(ic.recordVolume)
+    lines.push('Record volume: '+(ic.recordVolume==='assume'?'Use conservative sector-based estimate (state assumption in output)':ic.recordVolume));
   if(LS_WISHLIST&&LS_WISHLIST.length){
     var wl=LS_WISHLIST.map(function(w){return w.cap+(w.budget&&w.budget!=='Not Started'?' ['+w.budget+']':' [No Budget Yet]');});
     lines.push('Capabilities under evaluation / pipeline: '+wl.join('; ')+' — factor these into roadmap phasing');
   }
   return lines.length?'\n\nPRACTITIONER INTERNAL CONTEXT (treat as authoritative — overrides assumptions):\n'+lines.join('\n'):'';
 }
-
-
 function buildFrameworkContext(){
   // Serialise selected frameworks with their domains + obligations
   // Used in all 3 prompts so AI understands the full compliance picture
@@ -2455,7 +2774,7 @@ function buildDocumentPrompt(ctx,dash,road){
     '{"heading":"7. Regulatory & Compliance Obligations","body":"Write one substantive paragraph for EVERY framework listed in the SELECTED FRAMEWORKS context — this includes MANDATORY, RECOMMENDED, and any additionally selected frameworks. Do not skip any. For each framework paragraph include all five elements: (1) specifically why it applies to this organisation (name the sector, data type, or geography that triggers it), (2) what it actually requires in practical terms (name specific controls or obligations, not just the framework name), (3) the current compliance gap — what is missing right now based on the identified gaps, (4) exactly which roadmap initiative addresses it and when, (5) the business consequence of non-compliance in financial terms (regulatory fine range in local currency, licence risk, or operational restriction). No bullet lists — write in connected business prose. Conclude with one sentence on the competitive and trust advantage of achieving multi-framework compliance."},'+
     '{"heading":"8. 3-Year Roadmap Summary","body":"For each of the three phases, write 2-3 sentences covering: the phase theme, the 2-3 most critical named initiatives (use the EXACT initiative titles from the ROADMAP provided in context — do not invent new initiative names), the combined budget for that phase, the initiative owner(s), and the specific risk or gap that phase eliminates. Then write a final paragraph: what does the organisation look like at month 36? Name specific outcomes — e.g. ISO 27001 certified, ADHICS compliant, detection time reduced from days to hours, ransomware risk reduced by X%. This section is the bridge between strategy and execution — it must make someone reading it understand exactly what will happen and when."},'+
     '{"heading":"9. Resource Plan","body":"Year-by-year budget breakdown. For each year: total investment, split between people/tools/services/training. Headcount plan: in-house vs MSSP/outsourced. Note any critical skill gaps and how they will be addressed. Benchmark the total 3-year investment against industry norms (typically 10-15% of IT spend or $500-$1000 per employee per year for mid-market). '+(ic.budget?'Budget signal provided: '+ic.budget+'.':'')+' If the budget is constrained, state the residual risk explicitly."},'+
-    '{"heading":"10. Risk Quantification","body":"Estimate the annual loss exposure this strategy addresses. Use the FAIR methodology framing: frequency of likely events × impact per event = expected annual loss. State the top 3 risk scenarios with a financial range (e.g. ransomware: $X-Y, data breach: $X-Y, regulatory penalty: $X-Y). Then state the total 3-year investment and the risk it reduces. This is the ROI case for the strategy."},'+
+    '{"heading":"10. Risk Quantification","body":"Use the FAIR methodology to derive ALL financial figures from the practitioner inputs provided — do not use generic sector averages. Follow this exact derivation sequence and SHOW YOUR WORKING in the body text:\n\n1. REVENUE PROXY: If headcount is provided, estimate annual revenue using UAE/regional sector benchmarks (healthcare AED 500K/employee, financial services AED 1.2M/employee, real estate AED 400K/employee, logistics AED 600K/employee, technology AED 800K/employee, multi-sector holding AED 700K/employee). State: Based on [headcount band] employees in [sector], estimated annual revenue: AED X-Y.\n\n2. DOWNTIME COST PER HOUR: Revenue proxy divided by 2,080 working hours multiplied by operational dependency factor. Operational dependency: if critical systems include ERP + core business app = 90% dependency; email + identity only = 40%; none selected = 20%. State the formula used.\n\n3. RANSOMWARE SCENARIO: Use actual incident history if provided (past incident = higher frequency). Typical ransomware recovery = 3-7 days for unpatched environments, 1-3 days for patched. Calculate: downtime cost x recovery days + estimated ransom range (USD 50K-500K for mid-market). Express in AED. State frequency assumption: 1 incident per 3-5 years = annualised loss of AED X.\n\n4. DATA BREACH SCENARIO: If data types are provided, use published per-record costs (healthcare: USD 429/record IBM 2024, financial: USD 206/record, general PII: USD 165/record). If record volume is Use conservative estimate, state: Record volume not provided. Conservative estimate of [X] records assumed based on [headcount + sector + customer-facing signals]. This estimate will be refined when a formal data inventory is completed. Calculate breach cost = records x per-record cost. Express in AED.\n\n5. REGULATORY PENALTIES: Use published maximum fine ranges for selected mandatory frameworks: ADHICS up to AED 4M, UAE PDPL up to AED 5M, GDPR up to EUR 20M or 4% global turnover, NCA ECC operational restrictions. State which frameworks apply.\n\n6. TOTAL ANNUALISED LOSS EXPOSURE: Sum the three scenarios with frequency weighting. Then state total 3-year investment vs risk mitigated.\n\nIMPORTANT: Every number must show its derivation. If an input was not provided, state the assumption explicitly. The board must be able to trace every figure back to a stated assumption or published benchmark."},'+
     '{"heading":"11. Measuring Success — KPIs & Review Cadence","body":"5 KPIs reported to the board quarterly: (1) Security maturity score vs target, (2) Compliance posture % across applicable frameworks, (3) Quantified financial risk exposure trending over time, (4) Third-party risk coverage %, (5) Mean time to detect and respond to incidents. For each KPI: current baseline, 12-month target, 36-month target, and who is responsible for reporting it. State the board review cadence."},'+
     '{"heading":"12. Quick Wins — Start Here","body":"5 specific actions that can be taken in the next 30 days, regardless of budget approval status. Each action should: cost little or nothing, reduce real risk immediately, and build momentum. Examples: enforce MFA on all admin accounts, complete an asset inventory, run a phishing simulation, review privileged access list, brief the board on the top 3 risks. Make these specific and actionable — not generic recommendations."}'+
   ']';
@@ -3492,6 +3811,36 @@ detectBackend().then(function(){ loadSessions(); });
 loadSavedKey();
 var _vn=document.getElementById('ver-num');if(_vn)_vn.textContent=STRATIQ_VERSION;
 var _rvn=document.getElementById('res-ver-num');if(_rvn)_rvn.textContent=STRATIQ_VERSION;
+
+// Tooltip viewport edge detection — prevent tooltips clipping off screen edges
+document.addEventListener('mouseover',function(e){
+  var tt=e.target.closest('.ctx-tooltip');
+  if(!tt) return;
+  var tip=tt.querySelector('.ctx-tip');
+  if(!tip) return;
+  // Reset transforms first
+  tip.style.left='50%';
+  tip.style.transform='translateX(-50%)';
+  // After render, check edges
+  requestAnimationFrame(function(){
+    var r=tip.getBoundingClientRect();
+    if(r.left < 8){
+      tip.style.left='0';
+      tip.style.transform='translateX(0)';
+    } else if(r.right > window.innerWidth - 8){
+      tip.style.left='auto';
+      tip.style.right='0';
+      tip.style.transform='none';
+    }
+  });
+});
+document.addEventListener('mouseout',function(e){
+  var tt=e.target.closest('.ctx-tooltip');
+  if(!tt) return;
+  var tip=tt.querySelector('.ctx-tip');
+  if(!tip) return;
+  tip.style.left='';tip.style.right='';tip.style.transform='';
+});
 </script>
 </body>
 </html>
