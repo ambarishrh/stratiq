@@ -12,10 +12,11 @@
 <br/>
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/ambarishrh/stratiq?style=flat-square&logo=docker&logoColor=white&color=2496ED&label=Docker%20Pulls)](https://hub.docker.com/r/ambarishrh/stratiq)
-[![Version](https://img.shields.io/badge/Version-2.8.1-006ECC?style=flat-square)](https://github.com/ambarishrh/stratiq/releases)
+[![Version](https://img.shields.io/badge/Version-2.9.0-006ECC?style=flat-square)](https://github.com/ambarishrh/stratiq/releases)
 [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?style=flat-square)](LICENSE)
 [![BYOK](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-28a745?style=flat-square)](https://openrouter.ai)
 [![Privacy](https://img.shields.io/badge/Data-100%25%20Local-success?style=flat-square)](#privacy--security)
+[![Web](https://img.shields.io/badge/Web-GitHub%20Pages-222?style=flat-square&logo=github)](https://ambarishrh.github.io/stratiq)
 
 <br/>
 
@@ -31,7 +32,7 @@ StratIQ is a **free, open-source, privacy-first platform** that empowers IT and 
 
 Most organisations — especially mid-market — don't have a written IT or cybersecurity strategy. Hiring consultants costs $50,000–$200,000+. Internal teams lack time. Board pressure is increasing. Compliance deadlines are real. **StratIQ is built for those organisations — the ones starting from zero.**
 
-StratIQ scrapes your company's public presence — homepage, about page, news, leadership — to understand your organisation's vision, mission, goals, and growth trajectory. It uses this as the foundation to build an IT and cybersecurity strategy grounded in where the business is actually going.
+StratIQ researches your company's public presence — homepage, about page, news, leadership — using AI-powered web search to understand your organisation's vision, mission, goals, and growth trajectory. It uses this as the foundation to build an IT and cybersecurity strategy grounded in where the business is actually going.
 
 > **If your organisation already has a written corporate strategy, that should be your starting point.** StratIQ produces the first 80% — something credible, structured, and board-ready to build from, not a replacement for deep internal strategy work.
 
@@ -53,11 +54,38 @@ All outputs are **audience-aware** — language, depth, and framing adapt for CI
 
 <br/>
 
-## Quick Start
+## Deployment Options
 
-> **Only requirement:** [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+StratIQ supports two deployment modes from the same file. Choose based on your needs.
 
-### Mac / Linux
+---
+
+### Option A — GitHub Pages / Static Hosting *(Zero Install)*
+
+No Docker. No server. Open in a browser and go.
+
+**Live instance:** **[https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/stratiq)**
+
+Or deploy your own in 60 seconds:
+1. Fork this repo on GitHub
+2. Go to **Settings → Pages → Deploy from branch → `gh-pages` → root**
+3. Access at `https://<your-username>.github.io/stratiq`
+
+**How it works in this mode:**
+- All data stored in your browser's IndexedDB — nothing leaves your machine, ever
+- Company research powered by AI web search — no scraping, no CORS issues, works on every site
+- Sessions persist across browser restarts on the same device
+- No cross-device sync (by design — privacy first)
+
+**Supported AI providers:** Anthropic Claude, OpenAI GPT-4o, Google Gemini, OpenRouter
+
+---
+
+### Option B — Docker *(Self-Hosted, Enterprise)*
+
+Full persistence via SQLite. Air-gap capable. Multi-session support.
+
+#### Mac / Linux
 
 ```bash
 docker run -d -p 3000:3000 -v stratiq_data:/app/data \
@@ -66,7 +94,7 @@ docker run -d -p 3000:3000 -v stratiq_data:/app/data \
 open http://localhost:3000
 ```
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 
 ```powershell
 docker run -d -p 3000:3000 -v stratiq_data:/app/data `
@@ -76,6 +104,22 @@ start http://localhost:3000
 ```
 
 No configuration. No environment variables. No setup wizard. **Two commands.**
+
+**Supported AI providers:** Anthropic Claude, OpenAI GPT-4o, Google Gemini, OpenRouter
+
+---
+
+### Comparison
+
+| Feature | GitHub Pages | Docker |
+|---|---|---|
+| Installation | None | Docker required |
+| Data storage | Browser IndexedDB | SQLite (server) |
+| Cross-device sync | No | Yes (shared volume) |
+| Company research | AI web search (primary) | AI web search (primary) |
+| Scraping fallback | No | Yes — if AI web search fails |
+| Air-gap support | No | Yes |
+| Cost | Free | Free |
 
 <br/>
 
@@ -100,7 +144,7 @@ Your API key is stored only in your browser's localStorage — never transmitted
 
 ```
 1. Enter company URL
-2. StratIQ scrapes homepage, about, news, and leadership pages
+2. AI researches the company using web search — homepage, about, news, leadership signals
 3. AI extracts intelligence signals: vision, growth, sector, leadership gaps, risk signals
 4. AI recommends applicable frameworks based on geography, sector, and regulatory signals
 5. You complete a 14-question Internal Context Interview (budget, headcount, team structure, constraints)
@@ -108,6 +152,8 @@ Your API key is stored only in your browser's localStorage — never transmitted
 7. AI generates all three outputs in ~60 seconds
 8. Export as PDF, copy to Word, or download raw JSON
 ```
+
+> **Docker users:** If AI web search fails (e.g. provider outage), StratIQ automatically falls back to live HTML scraping via BeautifulSoup. You get results either way.
 
 <br/>
 
@@ -170,7 +216,7 @@ The full 12-section document is built for execution, not decoration:
 ## Wizard Steps
 
 1. **API Key** — Choose provider, enter key (saved to localStorage), check balance
-2. **Company URL** — Enter URL, StratIQ scrapes 4 pages (homepage, about, news, leadership)
+2. **Company URL** — Enter URL, AI researches the company using web search
 3. **Review Sources** — Review extracted signals, deselect or remove individual signals
 4. **Company Profile** — Confirm AI-inferred company name, industry, region, size, stage
 5. **Internal Context** — 14-question interview: budget, headcount, team, incidents, board attitude, constraints
@@ -185,13 +231,16 @@ The full 12-section document is built for execution, not decoration:
 
 | What | Where it happens |
 |------|-----------------|
-| Company URL scraping | Your Docker container → public internet |
+| Company research | Your browser → your AI provider (direct, no proxy) |
 | AI generation | Your browser → your AI provider (direct, no proxy) |
-| Session history | Your machine only — SQLite in a local Docker volume |
+| Session history (Docker) | Your machine only — SQLite in a local Docker volume |
+| Session history (GitHub Pages) | Your browser only — IndexedDB, never leaves the device |
 | Your API key | Browser localStorage only — never transmitted to StratIQ |
 | Generated strategy | Your machine only |
 
 > **StratIQ has no servers. There is nothing to breach.**
+
+> **GitHub Pages mode:** Data never transits a network at all. AI calls go browser-direct to your provider. Session data lives in your browser's IndexedDB. StratIQ as a hosting provider has zero visibility into any data you enter.
 
 <br/>
 
@@ -222,23 +271,26 @@ docker run -d -p 3000:3000 -v stratiq_data:/app/data --name stratiq stratiq
 open http://localhost:3000
 ```
 
-**Stack:** Single-file HTML/JS frontend · Python Flask · SQLite · Docker
+**Stack:** Single-file HTML/JS frontend · Python Flask · SQLite · Docker · GitHub Pages
 
 <br/>
 
 ## FAQ
 
 **Does my company data leave my machine?**
-No. Scraping runs inside your Docker container. AI calls go directly from your browser to your chosen provider. Nothing passes through any StratIQ infrastructure.
+No. In Docker mode, AI calls go browser-direct to your provider and session data stays in a local SQLite volume. In GitHub Pages mode, AI calls go browser-direct and session data lives in your browser's IndexedDB. Nothing passes through any StratIQ infrastructure in either mode.
 
 **Is StratIQ free?**
 Yes. StratIQ is free and open source. You pay only for your own AI API usage — typically a few cents per full analysis.
 
-**We already have a corporate strategy document — how does that help?**
-If you have a written organisational strategy, use it as your primary input. StratIQ's scan gives a starting point by inferring strategy from public signals — your real internal strategy will always be richer. The best use in that case is alignment validation: does your IT and cybersecurity roadmap actually support where the business says it's going?
+**Do I need Docker to use StratIQ?**
+No. Open [https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/stratiq) in any browser and start immediately. Docker gives you SQLite persistence and scraping fallback, but is not required.
 
-**What if a scan returns limited signals?**
-StratIQ flags inaccessible pages and generates from whatever signals were collected. You can add context manually in the Internal Context Interview and Organisational Context sections before generating.
+**We already have a corporate strategy document — how does that help?**
+If you have a written organisational strategy, use it as your primary input. StratIQ's AI research gives a starting point by inferring strategy from public signals — your real internal strategy will always be richer. The best use in that case is alignment validation: does your IT and cybersecurity roadmap actually support where the business says it's going?
+
+**What if the scan returns limited signals?**
+StratIQ flags inaccessible information and generates from whatever signals were collected. You can add context manually in the Internal Context Interview and Organisational Context sections before generating.
 
 **How do I update my API key?**
 Click the "Forget" link next to your saved key on the API screen, then enter the new one.
@@ -252,6 +304,7 @@ docker stop stratiq && docker rm stratiq
 docker volume rm stratiq_data
 docker rmi ambarishrh/stratiq:latest
 ```
+For GitHub Pages mode: clear your browser's IndexedDB for `ambarishrh.github.io` in browser settings.
 
 <br/>
 
@@ -289,6 +342,6 @@ Issues, feature requests, and pull requests are welcome. Please open an issue be
 
 *Built for IT and security leaders who need strategy on the board's timeline — not the consultant's.*
 
-**[Docker Hub](https://hub.docker.com/r/ambarishrh/stratiq)** &nbsp;·&nbsp; **[Report an Issue](https://github.com/ambarishrh/stratiq/issues)** &nbsp;·&nbsp; **[Dr. Muhammad Malik](https://www.linkedin.com/in/dr-muhammad-malik-45940a/)**
+**[Try it now — no install](https://ambarishrh.github.io/stratiq)** &nbsp;·&nbsp; **[Docker Hub](https://hub.docker.com/r/ambarishrh/stratiq)** &nbsp;·&nbsp; **[Report an Issue](https://github.com/ambarishrh/stratiq/issues)** &nbsp;·&nbsp; **[Dr. Muhammad Malik](https://www.linkedin.com/in/dr-muhammad-malik-45940a/)**
 
 </div>

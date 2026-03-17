@@ -4,6 +4,38 @@ All notable changes to StratIQ are documented here.
 
 ---
 
+## [2.9.0] — 2026-03-16
+
+### Added — GitHub Pages Support (Zero-Install Deployment)
+- **StratIQ now runs as a fully static web app** — no Docker, no server, no installation required
+- **Live instance:** [https://ambarishrh.github.io/stratiq](https://ambarishrh.github.io/stratiq)
+- **IndexedDB persistence** — full session CRUD in browser: save, resume, delete, auto-save, landscape data, generated outputs. Data stays entirely on the user's machine — never transits a network
+- **Storage adapter pattern** — `detectBackend()` pings `/api/ping` on load with a 1.5s timeout. Flask/Docker present → `FlaskAdapter` (SQLite). No backend → `IndexedDBAdapter` (browser-native). Zero configuration — fully automatic
+- **`FlaskAdapter`** — wraps all Flask API calls behind a consistent interface (`getSessions`, `getSession`, `deleteSession`, `saveWizardState`, `saveScan`, `saveGeneration`, `saveLandscape`, `scrape`)
+- **`IndexedDBAdapter`** — identical interface, browser-native IndexedDB backend. Full session history, status tracking, auto-save support. Works on `gh-pages`, any static CDN, or local `file://` (without web search)
+
+### Added — AI-Powered Company Research (Primary Scan Mode)
+- **`callClaudeWithWebSearch()`** — new AI call function that enables provider-native web search for company research. No scraping, no CORS proxies, works everywhere including GitHub Pages
+  - **Anthropic:** `web_search_20250305` tool via `/v1/messages`
+  - **OpenAI:** Responses API (`/v1/responses`) with `web_search_preview` tool
+  - **Google Gemini:** grounding with `googleSearch`
+  - **OpenRouter:** routes to `perplexity/sonar` model with built-in web search
+- **`buildResearchPrompt()`** — structured prompt instructing the AI to research a company from its URL using training knowledge + live web search. Returns the same JSON schema as the scrape-based scan — signals across all 28 categories, framework recommendations, company profile. Quality is equal to or better than HTML scraping for most companies
+- **AI research is now primary for ALL deployment modes** — replaces HTML scraping as the default. Faster, richer, and immune to CORS restrictions, WAF blocks, and JavaScript-heavy sites
+- Flask scraping retained as **Docker-only fallback** — if `callClaudeWithWebSearch` throws, StratIQ falls back to BeautifulSoup scrape + `buildSignalPrompt`. No silent failures
+- Scan step labels updated: "Researching company online..." / "Analysing public information..." / "Identifying leadership signals..."
+
+### Changed
+- **Single file serves both modes** — `stratiq_8.html` auto-detects Docker vs static hosting at runtime. No separate file to maintain
+- **All session functions** (`loadSessions`, `resumeSession`, `deleteSession`, `_doAutoSave`, `saveSessionScan`, `saveSessionGeneration`, `saveLandscapeData`) now call `storage.*` adapter — never Flask directly. Docker behaviour is 100% unchanged
+- Version bumped: 2.8.4 → 2.9.0
+
+### Fixed
+- `api/ping` 404 on non-Docker deployments no longer surfaces as a console error — expected behaviour, falls back silently to IndexedDB mode
+- CORS proxy failures during scrape fallback no longer crash the scan — graceful degradation to AI-only analysis
+
+---
+
 ## [2.8.4] — 2026-03-15
 
 ### Improved — Internal Context Interview
