@@ -21,7 +21,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
 import uuid
 import sqlite3
+import socket
 import traceback
+from ipaddress import ip_address, ip_network, AddressValueError
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify, send_from_directory
@@ -30,6 +32,43 @@ import requests as http_requests
 from bs4 import BeautifulSoup
 
 # providers/ imports removed — AI calls are browser-direct, Flask only scrapes + SQLite
+
+# ── SSRF protection ───────────────────────────────────────────────────────────
+_BLOCKED_NETS = [ip_network(n) for n in [
+    '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16',
+    '127.0.0.0/8', '169.254.0.0/16', '0.0.0.0/8',
+    '::1/128', 'fc00::/7', 'fe80::/10',
+]]
+
+def _validate_url(url: str) -> bool:
+    """Return True only if URL is http/https and does not point to a private/loopback address."""
+    try:
+        p = urlparse(url)
+        if p.scheme not in ('http', 'https'):
+            return False
+        hostname = p.hostname or ''
+        if not hostname:
+            return False
+        # Resolve hostname to IP and check against blocked ranges
+        try:
+            addr = ip_address(hostname)
+        except AddressValueError:
+            # It's a hostname — resolve it
+            try:
+                resolved = socket.getaddrinfo(hostname, None)
+                for _, _, _, _, sockaddr in resolved:
+                    try:
+                        addr = ip_address(sockaddr[0])
+                        if any(addr in net for net in _BLOCKED_NETS):
+                            return False
+                    except AddressValueError:
+                        pass
+            except socket.gaierror:
+                pass  # Unresolvable hostname — allow and let requests handle it
+            return True
+        return not any(addr in net for net in _BLOCKED_NETS)
+    except Exception:
+        return False
 
 # ── Scraping helpers ──────────────────────────────────────────────────────────
 SCRAPE_TIMEOUT = 15
@@ -121,7 +160,11 @@ DB_PATH = os.environ.get("STRATIQ_DB", os.path.join(BASE_DIR, "data", "stratiq.d
 PORT = int(os.environ.get("PORT", 3000))
 
 app = Flask(__name__, static_folder=STATIC_DIR)
-CORS(app)
+CORS(app, origins=[
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://ambarishrh.github.io",
+])
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -270,6 +313,8 @@ def scrape():
     url = (body.get("url") or "").strip()
     if not url:
         return jsonify({"error": "url is required"}), 400
+    if not _validate_url(url):
+        return jsonify({"error": "Invalid or disallowed URL"}), 400
 
     pages = _candidate_urls(url)
     results = {}
@@ -324,6 +369,8 @@ def scan():
     url = (body.get("url") or "").strip()
     if not url:
         return jsonify({"error": "url is required"}), 400
+    if not _validate_url(url):
+        return jsonify({"error": "Invalid or disallowed URL"}), 400
     pages = _candidate_urls(url)
     results = {}
     for key, page_url in pages.items():

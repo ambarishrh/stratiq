@@ -4,7 +4,19 @@ All notable changes to StratIQ are documented here.
 
 ---
 
+## [2.9.5] — 2026-03-19
+
+### Security
+- AI-generated text (document sections, roadmap initiative titles and descriptions, strategic pillars) is now safely escaped before rendering into the page. Previously, content returned by the AI provider could theoretically contain HTML characters that would be interpreted by the browser.
+- URL validation added to the Flask scraping backend. StratIQ now rejects requests targeting private IP ranges, loopback addresses, and non-HTTP(S) schemes — preventing the Docker container from being used to probe internal networks.
+- Google Gemini API key moved from the URL query string to a request header. Previously the key appeared in browser history and any proxy logs between the user and Google's API.
+- Flask API now only accepts requests from `localhost:3000` and the official GitHub Pages deployment. Previously it accepted requests from any origin.
+- Session IDs now generated using the browser's cryptographic random API instead of `Math.random()`.
+
+---
+
 ## [2.9.4] — 2026-03-17
+
 
 ### Fixed
 - Mandatory frameworks (ADHICS, UAE PDPL, NCA ECC, etc.) can now be deselected. Previously they were permanently locked — pre-selected and impossible to remove. A CISO who understands their regulatory scope can now consciously uncheck any framework that doesn't apply to their organisation.

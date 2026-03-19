@@ -242,7 +242,6 @@ Home
    <p style="margin:0 0 6px;font-size:12px;color:var(--text-dim);line-height:1.6">Strategy methodology inspired by the work of</p>
    <a href="https://www.linkedin.com/in/dr-muhammad-malik-45940a/" target="_blank" style="font-size:13px;font-weight:700;color:var(--accent);text-decoration:none">Dr. Muhammad Malik</a>
    <p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);line-height:1.6;font-style:italic">"Clarity Over Controls" &nbsp;&middot;&nbsp; "Learning Cybersecurity Strategy From Zero" &nbsp;&middot;&nbsp; "Securing What Matters"</p>
-   <p style="margin:10px 0 0;font-size:11px;color:var(--text-muted);line-height:1.7">Enriched with business strategy lenses drawn from Porter, Kaplan &amp; Norton, Osterwalder, and the FAIR risk quantification model &mdash; applied through a practitioner's eye to make security strategy legible to boards, not just auditors.</p>
   </div>
  </div>
 </div>
@@ -695,15 +694,22 @@ let currentSessionId=null;
 let _pendingResumeId=null;
 let aiDashboard=null, aiRoadmap=null, aiDocument=null;
 let internalContext={};
-const STRATIQ_VERSION='2.9.4';
+const STRATIQ_VERSION='2.9.5';
 
 // ── INIT WITH VALIDATION ─────────────────────────────────────────────────────
+
+// ── SECURITY HELPERS ──────────────────────────────────────────────────────────
+// Escape AI-returned text before inserting into innerHTML to prevent XSS.
+function escHtml(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // SESSION PERSISTENCE ----------------------------------------------------------
 
 function genUUID(){
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
-    var r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,function(c){
+    return (c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16);
   });
 }
 
@@ -1431,7 +1437,8 @@ async function callClaude(prompt, maxTok=4000, system=''){
     const msgs=system?[{role:'system',content:system},{role:'user',content:prompt}]:[{role:'user',content:prompt}];
     body={model:'gpt-4o',max_tokens:maxTok,messages:msgs};
   } else if(curProv==='google'){
-    endpoint=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    endpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
+    headers['x-goog-api-key']=apiKey;
     body={contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTok}};
   } else {
     endpoint='https://openrouter.ai/api/v1/chat/completions';
@@ -1483,7 +1490,8 @@ async function callClaudeWithWebSearch(prompt){
     };
 
   } else if(curProv==='google'){
-    endpoint=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    endpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
+    headers['x-goog-api-key']=apiKey;
     body={contents:[{parts:[{text:prompt}]}],
       tools:[{googleSearch:{}}],
       generationConfig:{maxOutputTokens:4000}};
@@ -2436,9 +2444,8 @@ function rFw(){
       var sel=selFw.has(fw.id);
       var lib=FW_LIBRARY[fw.id]||{};
       var color=fw.color||lib.color||'#5577CC';
-      var isMand=(tier==='Mandatory');
-      html+='<div onclick="tFw(\''+fw.id+'\')" style="display:flex;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid '+(sel?color+'44':isConsider?'var(--border)':tm.border)+';background:'+(sel?color+'0C':isConsider?'var(--surface2)':tm.bg)+';cursor:pointer;;transition:all .2s;margin-bottom:8px;opacity:'+(isConsider&&!sel?'0.85':'1')+'">'
-            +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(isMand?color:sel?color:'var(--border)')+';background:'+(sel?color:'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px;transition:all .2s">'+(sel?chk():'')+'</div>'
+      html+='<div onclick="tFw(\''+fw.id+'\')" style="display:flex;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid '+(sel?color+'44':isConsider?'var(--border)':tm.border)+';background:'+(sel?color+'0C':isConsider?'var(--surface2)':tm.bg)+';cursor:pointer;transition:all .2s;margin-bottom:8px;opacity:'+(isConsider&&!sel?'0.85':'1')+'">'
+            +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(sel?color:'var(--border)')+';background:'+(sel?color:'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px;transition:all .2s">'+(sel?chk():'')+'</div>'
             +'<div style="flex:1">'
             +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap">'
             +'<span style="font-size:15px;font-weight:800">'+fw.name+'</span>'
@@ -2466,6 +2473,7 @@ function rFw(){
 }
 function tFw(id){
   var fw=aiFrameworks.find(function(f){return f.id===id;});
+  if(!fw) return;
   selFw.has(id)?selFw.delete(id):selFw.add(id);rFw();autoSave();
 }
 
@@ -3043,7 +3051,7 @@ function rDash(){
   selFws.forEach(function(fw){var color=fw.color||'#5577CC';h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:13px"><div style="width:8px;height:8px;border-radius:50%;background:'+color+';flex-shrink:0"></div><span style="flex:1;font-size:13px;color:var(--text-dim)">'+fw.name+'</span><span class="badge" style="color:'+color+';background:'+color+'18;border:1px solid '+color+'28;font-size:9px">'+fw.priority+'</span></div>';});
   if(selFws.length===0){h+='<p style="font-size:12px;color:var(--text-muted);font-style:italic">No frameworks selected.</p>';}
   h+='</div></div><div class="card"><div class="sec-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 2L3 7v7c0 5 3.6 9.7 9 11 5.4-1.3 9-6 9-11V7L12 2z"/></svg>Strategic Pillars</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" class="g4">';
-  pillars.forEach(function(p){var pc=cm[p.color]||'var(--accent)';h+='<div style="padding:16px;background:'+pc+'0C;border:1px solid '+pc+'28;border-radius:10px"><div style="font-size:13px;font-weight:800;color:'+pc+';margin-bottom:8px">'+p.title+'</div><p style="margin:0;font-size:12px;color:var(--text-dim);line-height:1.55">'+p.desc+'</p></div>';});
+  pillars.forEach(function(p){var pc=cm[p.color]||'var(--accent)';h+='<div style="padding:16px;background:'+pc+'0C;border:1px solid '+pc+'28;border-radius:10px"><div style="font-size:13px;font-weight:800;color:'+pc+';margin-bottom:8px">'+escHtml(p.title)+'</div><p style="margin:0;font-size:12px;color:var(--text-dim);line-height:1.55">'+escHtml(p.desc)+'</p></div>';});
   h+='</div></div>';
   document.getElementById('tab-dashboard').innerHTML=h;
 }
@@ -3054,25 +3062,25 @@ function rRoad(){
   var el=document.getElementById('tab-roadmap');
   if(aiRoadmap&&aiRoadmap.phases){
     var h='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px"><div><h3 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0">IT & Cybersecurity Strategic Roadmap</h3><p style="color:var(--text-dim);margin:4px 0 0;font-size:13px">36-Month Initiative Plan</p></div>';
-    if(aiRoadmap.totalBudget||aiRoadmap.roiStatement){h+='<div style="text-align:right">'+(aiRoadmap.totalBudget?'<div style="font-size:13px;font-weight:700;color:var(--accent)">'+aiRoadmap.totalBudget+'</div>':'')+(aiRoadmap.roiStatement?'<div style="font-size:11px;color:var(--text-muted);margin-top:3px;max-width:300px">'+aiRoadmap.roiStatement+'</div>':'')+'</div>';}
+    if(aiRoadmap.totalBudget||aiRoadmap.roiStatement){h+='<div style="text-align:right">'+(aiRoadmap.totalBudget?'<div style="font-size:13px;font-weight:700;color:var(--accent)">'+escHtml(aiRoadmap.totalBudget)+'</div>':'')+(aiRoadmap.roiStatement?'<div style="font-size:11px;color:var(--text-muted);margin-top:3px;max-width:300px">'+escHtml(aiRoadmap.roiStatement)+'</div>':'')+'</div>';}
     h+='</div>';
     aiRoadmap.phases.forEach(function(phase){
       var phc=pc[phase.color]||'var(--accent)';
-      h+='<div style="margin-bottom:28px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="height:1px;width:20px;background:'+phc+'"></div><span style="font-size:11px;font-weight:800;color:'+phc+';text-transform:uppercase;letter-spacing:.1em">'+phase.label+'</span>'+(phase.theme?'<span style="font-size:11px;color:var(--text-muted);font-style:italic">'+phase.theme+'</span>':'')+'<div style="flex:1;height:1px;background:'+phc+'28"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="g2">';
+      h+='<div style="margin-bottom:28px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="height:1px;width:20px;background:'+phc+'"></div><span style="font-size:11px;font-weight:800;color:'+phc+';text-transform:uppercase;letter-spacing:.1em">'+escHtml(phase.label)+'</span>'+(phase.theme?'<span style="font-size:11px;color:var(--text-muted);font-style:italic">'+escHtml(phase.theme)+'</span>':'')+'<div style="flex:1;height:1px;background:'+phc+'28"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="g2">';
       (phase.items||[]).forEach(function(item){
         var idc=dc[item.domain]||'var(--text-dim)';
         var ipc=prc[item.priority]||'var(--text-dim)';
         h+='<div style="padding:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid '+idc+';border-radius:0 10px 10px 0">'
-          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px"><span style="font-size:14px;font-weight:700;flex:1">'+item.title+'</span>'
-          +'<div style="display:flex;gap:5px;flex-shrink:0"><span class="badge" style="color:'+idc+';background:'+idc+'18;border:1px solid '+idc+'30">'+item.domain+'</span><span class="badge" style="color:'+ipc+';background:'+ipc+'18;border:1px solid '+ipc+'30">'+item.priority+'</span></div></div>'
-          +(item.businessCase?'<div style="margin-bottom:8px;padding:8px 10px;background:var(--accent-glow);border-radius:6px;font-size:11px;color:var(--accent);font-weight:600">'+item.businessCase+'</div>':'')
-          +'<p style="margin:0 0 8px;font-size:12px;color:var(--text-dim);line-height:1.6">'+item.desc+'</p>'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px"><span style="font-size:14px;font-weight:700;flex:1">'+escHtml(item.title)+'</span>'
+          +'<div style="display:flex;gap:5px;flex-shrink:0"><span class="badge" style="color:'+idc+';background:'+idc+'18;border:1px solid '+idc+'30">'+escHtml(item.domain)+'</span><span class="badge" style="color:'+ipc+';background:'+ipc+'18;border:1px solid '+ipc+'30">'+escHtml(item.priority)+'</span></div></div>'
+          +(item.businessCase?'<div style="margin-bottom:8px;padding:8px 10px;background:var(--accent-glow);border-radius:6px;font-size:11px;color:var(--accent);font-weight:600">'+escHtml(item.businessCase)+'</div>':'')
+          +'<p style="margin:0 0 8px;font-size:12px;color:var(--text-dim);line-height:1.6">'+escHtml(item.desc)+'</p>'
           +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'
-          +(item.budget?'<span style="font-size:10px;color:var(--text-muted);font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">'+item.budget+'</span>':'')
-          +(item.owner?'<span style="font-size:10px;color:var(--text-dim);font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">Owner: '+item.owner+'</span>':'')
-          +(item.effort?'<span style="font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">Effort: '+item.effort+'</span>':'')
+          +(item.budget?'<span style="font-size:10px;color:var(--text-muted);font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">'+escHtml(item.budget)+'</span>':'')
+          +(item.owner?'<span style="font-size:10px;color:var(--text-dim);font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">Owner: '+escHtml(item.owner)+'</span>':'')
+          +(item.effort?'<span style="font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 7px">Effort: '+escHtml(item.effort)+'</span>':'')
           +'</div>'
-          +(item.successCriteria?'<div style="margin-top:8px;padding:6px 9px;background:rgba(0,122,74,.06);border:1px solid rgba(0,122,74,.2);border-radius:5px;font-size:10px;color:var(--success);font-weight:600">✓ '+item.successCriteria+'</div>':'')
+          +(item.successCriteria?'<div style="margin-top:8px;padding:6px 9px;background:rgba(0,122,74,.06);border:1px solid rgba(0,122,74,.2);border-radius:5px;font-size:10px;color:var(--success);font-weight:600">&#10003; '+escHtml(item.successCriteria)+'</div>':'')
           +'</div>';
       });
       h+='</div></div>';
@@ -3085,8 +3093,8 @@ function rRoad(){
 function rDoc(){
   var today=new Date().toLocaleDateString('en-GB');
   var d=aiDocument;
-  var cn=d?d.subtitle:(aiDashboard?aiDashboard.companyName:'Organisation');
-  var ref=d?d.docRef:('SIQ-STRAT-'+new Date().getFullYear()+'-001');
+  var cn=escHtml(d?d.subtitle:(aiDashboard?aiDashboard.companyName:'Organisation'));
+  var ref=escHtml(d?d.docRef:('SIQ-STRAT-'+new Date().getFullYear()+'-001'));
   var sections=d&&d.sections?d.sections:[
     {heading:'1. Executive Summary',body:'This document presents the IT and Cybersecurity Strategy. The strategy has been developed based on intelligence gathered from the organisation public presence, growth trajectory analysis, and alignment to applicable regulatory frameworks.'},
     {heading:'2. Strategic Vision',body:'Reduce the probability that a cyber event materially impacts the business. Success means the organisation can grow confidently, meet regulatory obligations, and recover rapidly from any disruption.'},
@@ -3097,7 +3105,7 @@ function rDoc(){
     {heading:'7. Measuring Success',body:'Success is measured by NCA ECC compliance score, mean time to detect and respond, zero critical unmitigated audit findings, and board risk appetite alignment confirmed annually.'}
   ];
   var h='<div class="doc-wrap"><div class="doc-hdr"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px"><div><div style="font-size:10px;color:#00CFFF;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:8px">CONFIDENTIAL - RESTRICTED DISTRIBUTION</div><h1 style="margin:0;font-size:26px;font-weight:900;color:#fff;line-height:1.2">IT & Cybersecurity Strategy</h1><h2 style="margin:6px 0 0;font-size:16px;color:#7A90B8;font-weight:400">'+cn+'</h2></div><div style="text-align:right;font-size:12px;color:#7A90B8;line-height:2"><div><strong style="color:#E4EEFF">Document Ref:</strong> '+ref+'</div><div><strong style="color:#E4EEFF">Version:</strong> 1.0 DRAFT</div><div><strong style="color:#E4EEFF">Classification:</strong> Confidential</div><div><strong style="color:#E4EEFF">Date:</strong> '+today+'</div></div></div></div><div class="doc-body"><div style="margin-bottom:32px;padding:18px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:6px"><div style="font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Document Control</div><table><thead><tr><th>Version</th><th>Date</th><th>Author</th><th>Approved By</th><th>Changes</th></tr></thead><tbody><tr><td>1.0</td><td>'+today+'</td><td>StratIQ Intelligence</td><td>Pending Review</td><td>Initial Draft</td></tr></tbody></table></div>';
-  sections.forEach(function(sec){h+='<section style="margin-bottom:30px"><h2>'+sec.heading+'</h2>';sec.body.split('\n').forEach(function(p){if(p.trim())h+='<p>'+p.trim()+'</p>';});h+='</section>';});
+  sections.forEach(function(sec){h+='<section style="margin-bottom:30px"><h2>'+escHtml(sec.heading)+'</h2>';sec.body.split('\n').forEach(function(p){if(p.trim())h+='<p>'+escHtml(p.trim())+'</p>';});h+='</section>';});
   h+='<div style="margin-top:48px;padding-top:24px;border-top:1px solid #e2e8f0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px">';
   ['Prepared By','Reviewed By','Approved By'].forEach(function(r){h+='<div><div style="font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.05em;margin-bottom:28px">'+r+'</div><div style="border-top:1px solid #4a5568;padding-top:8px"><div style="font-size:12px;color:#4a5568">Name: _____________________</div><div style="font-size:12px;color:#4a5568;margin-top:6px">Date: ______________________</div></div></div>';});
   h+='</div></div></div>';
